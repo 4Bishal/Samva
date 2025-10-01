@@ -10,7 +10,11 @@ const PORT = process.env.PORT || 8000;
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    options: "http://localhost:5173",
+    methods: ["GET", "POST", "DELETE"],
+    credentials: true
+}));
 
 app.use("/api", chatRoutes);
 
