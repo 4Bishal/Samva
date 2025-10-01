@@ -78,7 +78,7 @@ export const SideBar = () => {
         >
             {/* Top: Logo + New Chat */}
             <div
-                className={`p-4 flex items-center justify-between border-b transition-colors duration-300
+                className={`p-4 flex items-center justify-between border-b transition-colors duration-300 mb-10
           ${isDark ? "border-gray-700" : "border-gray-200"}`}
             >
                 <img

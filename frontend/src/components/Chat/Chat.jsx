@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChatContext } from "../../context/ChatProvider";
 import { ThemeContext } from "../../utils/ThemeProvider";
@@ -6,41 +6,39 @@ import rehypeHighlight from "rehype-highlight";
 import Markdown from "react-markdown";
 import "highlight.js/styles/github-dark.css";
 
-
 export const Chat = () => {
     const { isNewChat, chats, reply } = useContext(ChatContext);
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
 
-    const [latestReply, setLatestReply] = useState(null);
+    const [latestReply, setLatestReply] = useState("");
+    const lastTypedIndex = useRef(-1);
 
-    // Typing effect only for latest AI reply
+    // Typing effect only for the latest AI message (new messages)
     useEffect(() => {
-        if (!reply || !chats?.length) return setLatestReply(null);
+        if (!reply || !chats?.length) return;
 
-        const lastChat = chats[chats.length - 1];
-        if (lastChat.role !== "model" || lastChat.content !== reply) {
-            setLatestReply(null);
-            return;
+        const lastIndex = chats.length - 1;
+        const lastChat = chats[lastIndex];
+
+        if (
+            lastChat.role === "model" &&
+            lastChat.content === reply &&
+            lastIndex > lastTypedIndex.current
+        ) {
+            lastTypedIndex.current = lastIndex;
+            const words = reply.split(" ");
+            let idx = 0;
+            const interval = setInterval(() => {
+                setLatestReply(words.slice(0, idx + 1).join(" "));
+                idx++;
+                if (idx >= words.length) clearInterval(interval);
+            }, 40);
+            return () => clearInterval(interval);
+        } else {
+            setLatestReply(""); // Reset typing effect if no new AI message 
         }
-
-        const words = reply.split(" ");
-        let idx = 0;
-        const interval = setInterval(() => {
-            setLatestReply(words.slice(0, idx + 1).join(" "));
-            idx++;
-            if (idx >= words.length) clearInterval(interval);
-        }, 25);
-
-        return () => clearInterval(interval);
     }, [chats, reply]);
-
-    const latestAIMessage =
-        chats.length > 0 &&
-            chats[chats.length - 1].role === "model" &&
-            reply === chats[chats.length - 1].content
-            ? latestReply
-            : chats[chats.length - 1]?.content;
 
     return (
         <div className="flex-1 p-4 overflow-y-auto space-y-6">
@@ -53,9 +51,13 @@ export const Chat = () => {
                 </h1>
             ) : (
                 <div className="flex flex-col gap-4">
-                    {/* Previous chats */}
-                    {chats?.slice(0, -1).map((chat, idx) => {
+                    {chats?.map((chat, idx) => {
                         const isUser = chat.role === "user";
+                        const isLatestAI =
+                            chat.role === "model" &&
+                            idx === chats.length - 1 &&
+                            latestReply;
+
                         return (
                             <motion.div
                                 key={idx}
@@ -78,47 +80,21 @@ export const Chat = () => {
                                         borderTopRightRadius: isUser ? "0.5rem" : "1.5rem",
                                         borderTopLeftRadius: isUser ? "1.5rem" : "0.5rem",
                                         lineHeight: "1.8",
+                                        whiteSpace: "pre-wrap",
+                                        wordBreak: "break-word",
                                     }}
                                 >
-                                    <div className={`prose ${isDark ? "prose-invert" : ""} max-w-full`}>
+                                    <div
+                                        className={`prose ${isDark ? "prose-invert" : ""} max-w-full`}
+                                    >
                                         <Markdown rehypePlugins={[rehypeHighlight]}>
-                                            {chat.content}
+                                            {isLatestAI ? latestReply || chat.content : chat.content}
                                         </Markdown>
                                     </div>
                                 </div>
                             </motion.div>
                         );
                     })}
-
-                    {/* Latest AI reply with typing effect */}
-                    {chats.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="flex justify-start"
-                        >
-                            <div
-                                className="px-5 py-3 rounded-3xl max-w-[75%] text-sm shadow-md overflow-x-auto transition-colors duration-300"
-                                style={{
-                                    backgroundColor: isDark ? "#1F2937" : "#F3F4F6",
-                                    color: isDark ? "#F3F4F6" : "#1F2937",
-                                    borderTopLeftRadius: "0.5rem",
-                                    borderTopRightRadius: "1.5rem",
-                                    lineHeight: "1.8",
-                                    whiteSpace: "pre-wrap",
-                                    wordBreak: "break-word",
-                                    fontFamily: "Inter, sans-serif",
-                                }}
-                            >
-                                <div className={`prose ${isDark ? "prose-invert" : ""} max-w-full`}>
-                                    <Markdown rehypePlugins={[rehypeHighlight]}>
-                                        {latestAIMessage}
-                                    </Markdown>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
                 </div>
             )}
         </div>
