@@ -108,7 +108,7 @@ export const SideBar = () => {
                                 transition={{ duration: 0.2 }}
                                 onClick={() => changeThreadId(thread.threadId)}
                                 className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors duration-300
-                  ${thread.threadId === currentThreadId
+    ${thread.threadId === currentThreadId
                                         ? isDark
                                             ? "bg-purple-800 text-white"
                                             : "bg-purple-100 text-purple-700"
@@ -117,16 +117,17 @@ export const SideBar = () => {
                                             : "hover:bg-gray-100"
                                     }`}
                             >
-                                <span className="truncate text-sm font-medium">{thread.title}</span>
+                                <span className="truncate text-sm font-medium mr-2">{thread.title}</span>
                                 <Trash2
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         deleteThread(thread.threadId);
                                     }}
-                                    className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                                    className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
                                     size={16}
                                 />
                             </motion.li>
+
                         ))}
                     </AnimatePresence>
                 </ul>
