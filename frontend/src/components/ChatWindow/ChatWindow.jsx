@@ -1,20 +1,35 @@
-import React, { useContext, useState } from 'react'
-import "./ChatWindow.css"
-import { Chat } from '../Chat/Chat'
-import { ChevronDown, CircleUserRound, Send } from 'lucide-react';
-import { ChatContext } from '../../context/ChatProvider';
-import axios from "axios"
-import { ScaleLoader } from "react-spinners"
+import React, { useContext, useState } from "react";
+import { motion } from "framer-motion";
+import { Send } from "lucide-react";
+import { ChatContext } from "../../context/ChatProvider";
+import { ThemeContext } from "../../utils/ThemeProvider";
+import axios from "axios";
+import { ScaleLoader } from "react-spinners";
+import { Chat } from "../Chat/Chat";
+import { NavBar } from "../NavBar/NavBar.jsx";
 
 export const ChatWindow = () => {
-    const { prompt, setPrompt, reply, setReply, currentThreadId, chats, setChats, isNewChat, setIsNewChat } =
-        useContext(ChatContext);
+    const {
+        prompt,
+        setPrompt,
+        reply,
+        setReply,
+        currentThreadId,
+        chats,
+        setChats,
+        isNewChat,
+        setIsNewChat,
+    } = useContext(ChatContext);
 
-    const [isLoading, setIsLoading] = useState(false); // fix: false means not loading
+    const { theme } = useContext(ThemeContext);
+    const isDark =
+        theme === "dark";
+
+    const [isLoading, setIsLoading] = useState(false);
 
     const getReply = async () => {
-        if (!prompt.trim()) return; // prevent empty input
-        setIsLoading(true); // fix: start loader
+        if (!prompt.trim()) return;
+        setIsLoading(true);
 
         try {
             const response = await axios.post("http://localhost:8000/api/chat", {
@@ -24,51 +39,71 @@ export const ChatWindow = () => {
 
             setReply(response.data.reply);
 
-            setChats(prev => [
+            setChats((prev) => [
                 ...prev,
                 { role: "user", content: prompt },
                 { role: "model", content: response.data.reply },
             ]);
 
-            setPrompt(""); // clear after sending
+            setPrompt("");
         } catch (error) {
             console.error(error);
         } finally {
-            setIsLoading(false); // fix: stop loader
-            setIsNewChat(false)
+            setIsLoading(false);
+            setIsNewChat(false);
         }
     };
 
     return (
-        <div className='chatWindow'>
-            <div className='navbar'>
-                <span>Samva <ChevronDown className='arrow' /> </span>
-                <div className='userIconDiv'>
-                    <span className='userIcon'>
-                        <CircleUserRound strokeWidth={2} className='fa-user' />
-                    </span>
-                </div>
+        <div className={`flex flex-col h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
+            {/* Navbar */}
+            <NavBar />
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-4">
+                <Chat />
+                {isLoading && (
+                    <div className="flex justify-center py-4">
+                        <ScaleLoader color={isDark ? "#9333ea" : "#7e22ce"} loading={isLoading} />
+                    </div>
+                )}
             </div>
 
-            <Chat />
-
-            {isLoading && <ScaleLoader color='#fff' loading={isLoading} />}
-
-            <div className='chatInput'>
-                <div className="inputBox">
+            {/* Input Area */}
+            <div
+                className={`p-4 border-t ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                    } transition-colors duration-300`}
+            >
+                <motion.div
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="flex items-center gap-2"
+                >
                     <input
                         type="text"
-                        placeholder='Ask Anything'
+                        placeholder="Ask anything..."
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && !isLoading ? getReply() : null}
+                        onKeyDown={(e) => (e.key === "Enter" && !isLoading ? getReply() : null)}
+                        className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 
+              ${isDark ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500"
+                                : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-purple-500"} 
+              text-sm transition-colors duration-300`}
                     />
-                    <div id='submit' onClick={!isLoading ? getReply : undefined}>
-                        <Send className='send' />
-                    </div>
-                </div>
-                <p className="info">Samva can make mistakes. Check important info.</p>
+                    <button
+                        onClick={!isLoading ? getReply : undefined}
+                        className={`p-2 rounded-full transition ${isDark
+                            ? "bg-purple-600 hover:bg-purple-700 text-white"
+                            : "bg-purple-500 hover:bg-purple-600 text-white"
+                            }`}
+                    >
+                        <Send size={18} />
+                    </button>
+                </motion.div>
+                <p className={`mt-2 text-xs ${isDark ? "text-gray-400" : "text-gray-500"} text-center`}>
+                    Samva can make mistakes. Check important info.
+                </p>
             </div>
         </div>
-    )
-}
+    );
+};
