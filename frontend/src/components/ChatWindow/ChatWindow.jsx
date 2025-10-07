@@ -117,15 +117,15 @@ export const ChatWindow = () => {
                         onChange={(e) => setPrompt(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && !isLoading && getReply()}
                         className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 ${isDark
-                                ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500"
-                                : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-purple-500"
+                            ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500"
+                            : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-purple-500"
                             } text-sm transition-colors duration-300`}
                     />
                     <button
                         onClick={!isLoading ? getReply : undefined}
                         className={`p-2 rounded-full transition ${isDark
-                                ? "bg-purple-600 hover:bg-purple-700 text-white"
-                                : "bg-purple-500 hover:bg-purple-600 text-white"
+                            ? "bg-purple-600 hover:bg-purple-700 text-white"
+                            : "bg-purple-500 hover:bg-purple-600 text-white"
                             }`}
                     >
                         <Send size={18} />
