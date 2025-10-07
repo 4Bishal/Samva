@@ -1,6 +1,7 @@
 import express from "express";
 import { Thread } from "../models/Thread.model.js";
 import { getApiResponseFromGemini } from "../utils/geminiApi.js";
+import { handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
@@ -72,5 +73,19 @@ router.post("/chat", async (req, res) => {
         res.status(500).json({ error: error.message || "Something went wrong" });
     }
 });
+
+
+
+// Authentication Routes
+
+
+router.post("/register", handleRegister);
+
+router.post("/login", handleLogin);
+
+
+router.post("/logout", handleLogout);
+
+
 
 export { router };

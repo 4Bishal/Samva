@@ -1,4 +1,4 @@
-import { Schema, mongoose } from "mongoose"
+import mongoose, { Schema } from "mongoose"
 
 const MessageSchema = new Schema({
     role: {
@@ -29,6 +29,11 @@ const ThreadSchema = new Schema({
         default: "New Chat"
     },
     message: [MessageSchema],
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+    }
+    ,
     createdAt: {
         type: Date,
         default: Date.now
