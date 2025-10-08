@@ -32,6 +32,7 @@ const ThreadSchema = new Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
+        require: true
     }
     ,
     createdAt: {

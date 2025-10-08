@@ -3,18 +3,22 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { connectDd } from "./utils/connectDb.js";
 import { router as chatRoutes } from "./routes/chatRoutes.js";
+import cookieParser from "cookie-parser"
 
 dotenv.config();
 
 const PORT = process.env.PORT || 8000;
 const app = express();
 
-app.use(express.json());
 app.use(cors({
-    options: "http://localhost:5173",
-    methods: ["GET", "POST", "DELETE"],
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true
 }));
+
+app.use(express.json());
+app.use(cookieParser());
+
 
 app.use("/api", chatRoutes);
 

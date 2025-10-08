@@ -61,14 +61,14 @@ export const handleLogin = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (!user) {
-            res.status(status.BAD_REQUEST).json({ success: false, message: "Invalid Username or password" });
+            return res.status(status.BAD_REQUEST).json({ success: false, message: "Invalid Username or password" });
         }
 
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
 
         if (!isPasswordCorrect) {
-            res.status(status.UNAUTHORIZED).json({ success: false, message: "Invalid Username or password" });
+            return res.status(status.UNAUTHORIZED).json({ success: false, message: "Invalid Username or password" });
         }
 
         generateTokenAndSetCookie(res, user._id);
@@ -97,3 +97,20 @@ export const handleLogout = async (req, res) => {
         res.status(status.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
     }
 }
+
+
+export const checkAuth = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select("-password");
+        if (!user) {
+            res.status(status.NOT_FOUND).json({ success: false, message: "User doesn't exists" });
+        }
+
+        res.status(status.OK).json({ success: true, message: "User is Found", user });
+    } catch (error) {
+        console.log("Error in checkAuth - User not found!! - ", error);
+        res.status(status.INTERNAL_SERVER_ERROR).json({ success: false, message: error.message });
+    }
+}
+
+
