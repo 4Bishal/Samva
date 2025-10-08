@@ -1,11 +1,27 @@
-import { ChatWindow } from "./components/ChatWindow/ChatWindow";
-import { SideBar } from "./components/SideBar/SideBar.jsx";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatContext } from "./context/ChatProvider.jsx";
 import { ThemeProvider } from "./utils/ThemeProvider.jsx";
+import { SamvadPage } from "./pages/SamvadPage.jsx";
+import { GuestRoute } from "./utils/GuestRoute.jsx";
+import { ProtectedRoute } from "./utils/ProtectedRoute.jsx";
+import { LoginPage } from "./pages/LoginPage.jsx"
+import { RegisterPage } from "./pages/RegisterPage.jsx"
+import { HomePage } from "./pages/HomePage.jsx";
+import { NotFound } from "./pages/NotFound.jsx";
+import { useAuthStore } from "./store/authStore.jsx";
+import { LoadingSpinner } from "./utils/LoadingSpinner.jsx"
 
 function App() {
+
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+
   const [prompt, setPrompt] = useState("");
   const [reply, setReply] = useState(null);
   const [currentThreadId, setCurrentThreadId] = useState(uuidv4());
@@ -31,17 +47,43 @@ function App() {
   return (
     <ThemeProvider>
       <ChatContext.Provider value={providerValues}>
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
-          {/* Sidebar */}
-          <div className="hidden md:block w-64 border-r bg-white">
-            <SideBar />
-          </div>
+        <Router>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <GuestRoute>
+                  <LoginPage />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <GuestRoute>
+                  <RegisterPage />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/"
+              element={
 
-          {/* Chat Window */}
-          <div className="flex-1 flex flex-col">
-            <ChatWindow />
-          </div>
-        </div>
+                <HomePage />
+
+              }
+            />
+            <Route
+              path="/samvadPlace"
+              element={
+                <ProtectedRoute>
+                  <SamvadPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
       </ChatContext.Provider>
     </ThemeProvider>
   );

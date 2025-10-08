@@ -1,7 +1,8 @@
 import express from "express";
 import { Thread } from "../models/Thread.model.js";
 import { getApiResponseFromGemini } from "../utils/geminiApi.js";
-import { handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
+import { checkAuth, handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
+import { verifyToken } from "../middleware/verifyToken.js";
 
 const router = express.Router();
 
@@ -78,6 +79,7 @@ router.post("/chat", async (req, res) => {
 
 // Authentication Routes
 
+router.post("/check-auth", verifyToken, checkAuth);
 
 router.post("/register", handleRegister);
 
