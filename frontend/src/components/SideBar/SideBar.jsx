@@ -36,17 +36,37 @@ export const SideBar = () => {
         }
     };
 
-    const createNewChat = () => {
-        setPrompt("");
-        setReply(null);
-        setCurrentThreadId(uuidv4());
-        setChats([]);
-        setIsNewChat(true);
-    };
-
     useEffect(() => {
         getAllThreads();
     }, [currentThreadId]);
+
+    const createNewChatWithTitle = async (firstMessage) => {
+        setPrompt("");
+        setReply(null);
+        const newThreadId = uuidv4();
+        setCurrentThreadId(newThreadId);
+        setChats([]);
+        setIsNewChat(true);
+
+        if (firstMessage) {
+            try {
+                const response = await axios.post("http://localhost:8000/api/chat", {
+                    threadId: newThreadId,
+                    message: firstMessage
+                });
+
+                const { threadTitle } = response.data;
+
+                // Update sidebar
+                setAllThreads((prev) => [
+                    { threadId: newThreadId, title: threadTitle || "New Chat" },
+                    ...prev
+                ]);
+            } catch (err) {
+                console.log(err);
+            }
+        }
+    };
 
     const changeThreadId = async (newThreadId) => {
         setCurrentThreadId(newThreadId);
@@ -65,31 +85,24 @@ export const SideBar = () => {
         try {
             await axios.delete(`http://localhost:8000/api/threads/${threadId}`);
             setAllThreads((prev) => prev.filter((t) => t.threadId !== threadId));
-            if (threadId === currentThreadId) createNewChat();
+            if (threadId === currentThreadId) setIsNewChat(true);
         } catch (error) {
             console.log(error);
         }
     };
 
     return (
-        <aside
-            className={`h-screen w-64 flex flex-col border-r shadow-sm transition-colors duration-300
-        ${isDark ? "bg-gray-900 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
-        >
-            {/* Top: Logo + New Chat */}
-            <div
-                className={`p-4 flex items-center justify-between border-b transition-colors duration-300 mb-10
-          ${isDark ? "border-gray-700" : "border-gray-200"}`}
-            >
-                <img
-                    src={isDark ? DarkThemeLogo : LightThemeLogo}
-                    alt="Samva"
-                    className="h-8"
-                />
+        <aside className={`h-screen w-64 flex flex-col border-r shadow-sm transition-colors duration-300
+            ${isDark ? "bg-gray-900 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}>
+
+            {/* Logo + New Chat */}
+            <div className={`p-4 flex items-center justify-between border-b transition-colors duration-300 mb-10
+                ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+                <img src={isDark ? DarkThemeLogo : LightThemeLogo} alt="Samva" className="h-8" />
+                {/* Icon-only button, no background */}
                 <button
-                    onClick={createNewChat}
-                    className={`p-2 rounded-lg transition
-            ${isDark ? "bg-purple-600 hover:bg-purple-700 text-white" : "bg-purple-600 hover:bg-purple-700 text-white"}`}
+                    onClick={() => createNewChatWithTitle("")}
+                    className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition"
                 >
                     <SquarePen size={18} />
                 </button>
@@ -99,6 +112,25 @@ export const SideBar = () => {
             <div className="flex-1 overflow-y-auto">
                 <ul className="p-2 space-y-1">
                     <AnimatePresence>
+                        {allThreads.length === 0 && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className={`flex flex-col items-center justify-center px-3 py-4 text-sm italic text-center
+                                    ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                                <p className="mb-2">No previous chats yet.</p>
+                                {/* Icon-only new chat button */}
+                                <button
+                                    onClick={() => createNewChatWithTitle("")}
+                                    className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition"
+                                >
+                                    <SquarePen size={18} />
+                                </button>
+                            </motion.div>
+                        )}
+
                         {allThreads.map((thread) => (
                             <motion.li
                                 key={thread.threadId}
@@ -108,16 +140,13 @@ export const SideBar = () => {
                                 transition={{ duration: 0.2 }}
                                 onClick={() => changeThreadId(thread.threadId)}
                                 className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors duration-300
-    ${thread.threadId === currentThreadId
-                                        ? isDark
-                                            ? "bg-purple-800 text-white"
-                                            : "bg-purple-100 text-purple-700"
-                                        : isDark
-                                            ? "hover:bg-gray-800"
-                                            : "hover:bg-gray-100"
-                                    }`}
+                                    ${thread.threadId === currentThreadId
+                                        ? isDark ? "bg-purple-800 text-white" : "bg-purple-100 text-purple-700"
+                                        : isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
                             >
-                                <span className="truncate text-sm font-medium mr-2">{thread.title}</span>
+                                <span className="truncate text-sm font-medium mr-2" title={thread.title}>
+                                    {thread.title}
+                                </span>
                                 <Trash2
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -127,17 +156,14 @@ export const SideBar = () => {
                                     size={16}
                                 />
                             </motion.li>
-
                         ))}
                     </AnimatePresence>
                 </ul>
             </div>
 
             {/* Footer */}
-            <div
-                className={`p-3 border-t text-xs text-center transition-colors duration-300
-          ${isDark ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-500"}`}
-            >
+            <div className={`p-3 border-t text-xs text-center transition-colors duration-300
+                ${isDark ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-500"}`}>
                 By <span className="text-purple-600 font-semibold">Samva ♥</span>
             </div>
         </aside>

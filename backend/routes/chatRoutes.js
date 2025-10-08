@@ -1,81 +1,93 @@
 import express from "express";
 import { Thread } from "../models/Thread.model.js";
+import { User } from "../models/User.model.js";
 import { getApiResponseFromGemini } from "../utils/geminiApi.js";
-import { checkAuth, handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
+import { generateChatTitle } from "../utils/titleGenerator.js";
 import { verifyToken } from "../middleware/verifyToken.js";
+import { checkAuth, handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
-// Get all threads
+
+// ----------------------- GET ALL THREADS -----------------------
 router.get("/threads", async (req, res) => {
     try {
-        const threads = await Thread.find({}).sort({ updatedAt: -1 });
-        res.status(200).json({ threads, message: "All threads fetched successfully!" });
+        const threads = await Thread.find({ user: req.userId }).sort({ updatedAt: -1 });
+        res.status(200).json({ threads });
     } catch (error) {
-        res.status(500).json({ error: error.message || "Error fetching threads" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Get a single thread by threadId
+// ----------------------- GET SINGLE THREAD -----------------------
 router.get("/threads/:threadId", async (req, res) => {
     const { threadId } = req.params;
     try {
-        const thread = await Thread.findOne({ threadId });
+        const thread = await Thread.findOne({ threadId, user: req.userId });
         if (!thread) return res.status(404).json({ message: "Thread not found" });
-        res.status(200).json({ thread, message: "Thread found" });
+        res.status(200).json({ thread });
     } catch (error) {
-        res.status(500).json({ error: error.message || "Error fetching thread" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Delete a thread by threadId
+// ----------------------- DELETE THREAD -----------------------
 router.delete("/threads/:threadId", async (req, res) => {
     const { threadId } = req.params;
     try {
-        const thread = await Thread.findOneAndDelete({ threadId });
+        const thread = await Thread.findOneAndDelete({ threadId, user: req.userId });
         if (!thread) return res.status(404).json({ message: "Thread not found" });
-        res.status(200).json({ message: "Thread deleted successfully", thread });
+
+        // Remove thread reference from user's threads array
+        await User.findByIdAndUpdate(req.userId, { $pull: { threads: thread._id } });
+
+        res.status(200).json({ message: "Thread deleted successfully" });
     } catch (error) {
-        res.status(500).json({ error: error.message || "Error deleting thread" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Chat route
+// ----------------------- CREATE/CHAT -----------------------
 router.post("/chat", async (req, res) => {
     const { threadId, message } = req.body;
     if (!threadId || !message) return res.status(400).json({ error: "Missing required fields" });
 
     try {
-        // Find or create thread
-        let thread = await Thread.findOne({ threadId });
+        let thread = await Thread.findOne({ threadId, user: req.userId });
+
         if (!thread) {
+            // Generate short AI title
+            const aiTitle = await generateChatTitle(message);
+
             thread = new Thread({
                 threadId,
-                title: message,
-                message: [{ role: "user", content: message }]
+                title: aiTitle,
+                message: [{ role: "user", content: message }],
+                user: req.userId,
             });
+
+            await thread.save();
+
+            // Add to user's threads
+            await User.findByIdAndUpdate(req.userId, { $push: { threads: thread._id } });
         } else {
             thread.message.push({ role: "user", content: message });
         }
 
-        // Get AI response (last 10 messages by default)
-        const replyFromGemini = await getApiResponseFromGemini(thread.message, 10);
-
-        // Save AI response in thread
+        // Get AI reply
+        const replyFromGemini = await getApiResponseFromGemini(thread.message, "normal");
         const replyText = typeof replyFromGemini === "string" ? replyFromGemini : JSON.stringify(replyFromGemini);
+
         thread.message.push({ role: "model", content: replyText });
         thread.updatedAt = Date.now();
-
         await thread.save();
 
-        res.status(200).json({ reply: replyText });
+        res.status(200).json({ reply: replyText, threadTitle: thread.title });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message || "Something went wrong" });
+        res.status(500).json({ error: error.message });
     }
 });
-
-
 
 // Authentication Routes
 
@@ -85,9 +97,6 @@ router.post("/register", handleRegister);
 
 router.post("/login", handleLogin);
 
-
 router.post("/logout", handleLogout);
-
-
 
 export { router };

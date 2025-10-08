@@ -11,7 +11,7 @@ import { RegisterPage } from "./pages/RegisterPage.jsx"
 import { HomePage } from "./pages/HomePage.jsx";
 import { NotFound } from "./pages/NotFound.jsx";
 import { useAuthStore } from "./store/authStore.jsx";
-import { LoadingSpinner } from "./utils/LoadingSpinner.jsx"
+
 
 function App() {
 
