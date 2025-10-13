@@ -1,87 +1,151 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { LogIn, LogOut, UserPlus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom"; // <-- import Link
+import React, { useState, useContext } from "react";
+import { LogIn, LogOut, UserPlus, Menu, X, Sun, Moon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import DarkThemeLogo from "/src/assets/DarkThemeLogo.png";
+import LightThemeLogo from "/src/assets/LightThemeLogo.png";
 import { useAuthStore } from "../../store/authStore";
+import { ThemeContext } from "../../utils/ThemeProvider";
 
-export const Navbar = () => {
+export const NavBar = () => {
     const { isAuthenticated, logout } = useAuthStore();
     const navigate = useNavigate();
+    const [menuOpen, setMenuOpen] = useState(false);
+    const { theme, toggleTheme } = useContext(ThemeContext);
+
+    const isDark = theme === "dark";
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate("/login");
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // Theme-based styling
+    const navBg = isDark
+        ? "bg-gradient-to-r from-gray-950 via-gray-900 to-gray-800"
+        : "bg-gradient-to-r from-white via-gray-50 to-gray-100";
+    const textColor = isDark ? "text-gray-100" : "text-gray-800";
+    const linkHover = isDark ? "hover:text-blue-400" : "hover:text-blue-600";
+    const borderColor = isDark ? "border-gray-700" : "border-gray-200";
+    const btnText = isDark ? "text-blue-400" : "text-blue-600";
+    const btnBorder = isDark
+        ? "border border-blue-500/70"
+        : "border border-blue-600";
+    const hoverBg = isDark ? "hover:bg-gray-800/70" : "hover:bg-blue-50";
+    const dropdownBg = isDark ? "bg-gray-900" : "bg-white";
+
     return (
-        <motion.nav
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex justify-between items-center px-6 py-4 shadow-md bg-white/70 dark:bg-gray-900/70 backdrop-blur-md sticky top-0 z-50"
-        >
+        <nav className={`flex justify-between items-center px-6 py-4 sticky top-0 z-50 shadow-md transition-colors duration-500 ${navBg}`}>
             {/* Logo */}
-            <div className="flex items-center space-x-2">
-                <motion.img
-                    src={DarkThemeLogo}
-                    alt="Samva Logo"
-                    className="h-10 md:h-12 lg:h-14 object-contain"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.4 }}
-                />
+            <img
+                src={isDark ? DarkThemeLogo : LightThemeLogo}
+                alt="Logo"
+                className="h-10 md:h-12 lg:h-14 object-contain cursor-pointer"
+                onClick={() => navigate("/")}
+            />
+
+            {/* Desktop Links */}
+            <div className={`hidden md:flex space-x-8 font-medium ${textColor}`}>
+                <a href="#home" className={`${linkHover}`}>Home</a>
+                <a href="#about" className={`${linkHover}`}>About</a>
+                <a href="#contact" className={`${linkHover}`}>Contact</a>
             </div>
 
-            {/* Navigation Links */}
-            <div className="hidden md:flex space-x-8 text-sm font-medium">
-                <a href="#home" className="hover:text-blue-600 transition-colors duration-300">
-                    Home
-                </a>
-                <a href="#about" className="hover:text-blue-600 transition-colors duration-300">
-                    About
-                </a>
-                <a href="#contact" className="hover:text-blue-600 transition-colors duration-300">
-                    Contact
-                </a>
+            {/* Desktop Controls */}
+            <div className="hidden md:flex items-center space-x-4">
+                {/* Theme toggle */}
+                <button
+                    onClick={toggleTheme}
+                    title="Toggle Theme"
+                    className="p-2 rounded-full transition-all duration-300 hover:bg-gray-700/20"
+                >
+                    {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-blue-500" />}
+                </button>
+
+                {/* Auth buttons */}
+                {!isAuthenticated ? (
+                    <>
+                        <Link
+                            to="/login"
+                            className={`flex items-center gap-2 ${btnText} ${btnBorder} px-4 py-2 rounded-full font-semibold ${hoverBg}`}
+                        >
+                            <LogIn size={18} /> Login
+                        </Link>
+                        <Link
+                            to="/register"
+                            className="flex items-center gap-2 text-white bg-blue-600 px-4 py-2 rounded-full font-semibold shadow-md hover:bg-blue-700"
+                        >
+                            <UserPlus size={18} /> Register
+                        </Link>
+                    </>
+                ) : (
+                    <button
+                        onClick={handleLogout}
+                        className={`flex items-center gap-2 ${btnText} ${btnBorder} px-4 py-2 rounded-full font-semibold ${hoverBg}`}
+                    >
+                        <LogOut size={18} /> Logout
+                    </button>
+                )}
             </div>
-            {
-                !isAuthenticated ?
-                    <div className="flex items-center space-x-4">
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden flex items-center space-x-2">
+                <button
+                    onClick={toggleTheme}
+                    title="Toggle Theme"
+                    className="p-2 rounded-full transition-colors duration-300"
+                >
+                    {isDark ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-blue-500" />}
+                </button>
+
+                <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className={`${isDark ? "text-gray-100" : "text-gray-800"}`}
+                >
+                    {menuOpen ? <X size={26} /> : <Menu size={26} />}
+                </button>
+            </div>
+
+            {/* Mobile Dropdown */}
+            {menuOpen && (
+                <div className={`absolute top-16 left-0 w-full flex flex-col items-center space-y-5 py-6 border-t md:hidden z-40 ${dropdownBg} ${borderColor} ${textColor}`}>
+                    <a href="#home" onClick={() => setMenuOpen(false)} className={`${linkHover}`}>Home</a>
+                    <a href="#about" onClick={() => setMenuOpen(false)} className={`${linkHover}`}>About</a>
+                    <a href="#contact" onClick={() => setMenuOpen(false)} className={`${linkHover}`}>Contact</a>
+
+                    {!isAuthenticated ? (
+                        <>
                             <Link
                                 to="/login"
-                                className="flex items-center gap-2 text-blue-600 border border-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 dark:hover:bg-gray-800 transition-all duration-300 shadow-sm"
+                                onClick={() => setMenuOpen(false)}
+                                className={`flex items-center gap-2 ${btnText} ${btnBorder} px-4 py-2 rounded-full font-semibold ${hoverBg}`}
                             >
                                 <LogIn size={18} /> Login
                             </Link>
-                        </motion.div>
-
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Link
                                 to="/register"
-                                className="flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full font-semibold shadow-md transition-all duration-300"
+                                onClick={() => setMenuOpen(false)}
+                                className="flex items-center gap-2 text-white bg-blue-600 px-4 py-2 rounded-full font-semibold shadow-md hover:bg-blue-700"
                             >
                                 <UserPlus size={18} /> Register
                             </Link>
-                        </motion.div>
-                    </div>
-                    : <div className="flex items-center space-x-4">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={async () => {
-                                try {
-                                    await logout(); // call the logout function from your auth store
-                                    navigate("/login"); // redirect to login page after logout
-                                } catch (err) {
-                                    console.error(err);
-                                }
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                handleLogout();
+                                setMenuOpen(false);
                             }}
-                            className="flex items-center gap-2 text-blue-600 border border-blue-600 px-4 py-2 rounded-full font-semibold hover:bg-blue-50 dark:hover:bg-gray-800 transition-all duration-300 shadow-sm"
+                            className={`flex items-center gap-2 ${btnText} ${btnBorder} px-4 py-2 rounded-full font-semibold ${hoverBg}`}
                         >
                             <LogOut size={18} /> Logout
-                        </motion.button>
-                    </div>
-
-            }
-
-            {/* Action Buttons */}
-
-        </motion.nav>
+                        </button>
+                    )}
+                </div>
+            )}
+        </nav>
     );
 };

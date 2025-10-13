@@ -1,7 +1,6 @@
-// ChatWindow.jsx
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
 import { ChatContext } from "../../context/ChatProvider";
 import { ThemeContext } from "../../utils/ThemeProvider";
 import { Chat } from "../Chat/Chat";
@@ -26,7 +25,7 @@ export const ChatWindow = () => {
 
     const { user } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
-    const [typingAI, setTypingAI] = useState(""); // Typing effect overlay
+    const [typingAI, setTypingAI] = useState("");
     const chatEndRef = useRef(null);
 
     const scrollToBottom = () => {
@@ -37,7 +36,6 @@ export const ChatWindow = () => {
         scrollToBottom();
     }, [chats, typingAI]);
 
-    // Nepal time greeting
     const getGreeting = () => {
         const now = new Date();
         const utcHours = now.getUTCHours();
@@ -49,20 +47,17 @@ export const ChatWindow = () => {
         else return "Good evening";
     };
 
-    // Send message function
     const sendMessage = async (message) => {
         if (!message.trim()) return;
 
-        // 1️⃣ Add user message immediately
         const userMessage = { role: "user", content: message };
         setChats((prev) => [...prev, userMessage]);
 
-        setPrompt(""); // Clear input
+        setPrompt("");
         setIsLoading(true);
         setIsNewChat(false);
 
         try {
-            // 2️⃣ Fetch AI reply
             const response = await axios.post("http://localhost:8000/api/chat", {
                 message,
                 threadId: currentThreadId,
@@ -70,7 +65,6 @@ export const ChatWindow = () => {
 
             const aiReply = response.data.reply;
 
-            // 3️⃣ Typing effect overlay
             let idx = 0;
             const words = aiReply.split(" ");
             const interval = setInterval(() => {
@@ -78,9 +72,7 @@ export const ChatWindow = () => {
                 idx++;
                 if (idx >= words.length) {
                     clearInterval(interval);
-                    setTypingAI(""); // Remove overlay
-
-                    // 4️⃣ Push AI message after typing finishes
+                    setTypingAI("");
                     setChats((prev) => [...prev, { role: "model", content: aiReply }]);
                 }
             }, 40);
@@ -92,7 +84,6 @@ export const ChatWindow = () => {
         }
     };
 
-    // Local input component for new chat
     const LocalInput = () => {
         const [localPrompt, setLocalPrompt] = useState("");
 
@@ -103,27 +94,46 @@ export const ChatWindow = () => {
         };
 
         return (
-            <div className="flex mt-6 justify-center">
-                <input
-                    type="text"
-                    placeholder="Ask me anything..."
-                    value={localPrompt}
-                    onChange={(e) => setLocalPrompt(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !isLoading && handleSend()}
-                    className={`w-96 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 ${isDark
-                        ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500"
-                        : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-purple-500"
-                        } transition-colors duration-300`}
-                />
-                <button
-                    onClick={!isLoading ? handleSend : undefined}
-                    className={`ml-2 p-2 rounded-full transition ${isDark
-                        ? "bg-purple-600 hover:bg-purple-700 text-white"
-                        : "bg-purple-500 hover:bg-purple-600 text-white"
-                        }`}
-                >
-                    <Send size={18} />
-                </button>
+            <div className="flex mt-8 sm:mt-10 justify-center px-4 w-full">
+                <div className="flex items-end gap-2 w-full max-w-3xl">
+                    <div className="relative flex-1">
+                        <textarea
+                            rows="1"
+                            placeholder="Ask me anything..."
+                            value={localPrompt}
+                            onChange={(e) => {
+                                setLocalPrompt(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey && !isLoading) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
+                            className={`w-full px-4 py-3.5 text-sm md:text-base border-2 rounded-3xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-32 transition-all duration-300 ${isDark
+                                ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
+                                : "bg-white border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-400"
+                                }`}
+                            style={{ minHeight: '52px' }}
+                        />
+                    </div>
+                    <button
+                        onClick={!isLoading ? handleSend : undefined}
+                        disabled={isLoading || !localPrompt.trim()}
+                        className={`p-3.5 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading || !localPrompt.trim()
+                            ? isDark
+                                ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : isDark
+                                ? "bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-purple-500/50"
+                                : "bg-purple-500 hover:bg-purple-600 text-white shadow-lg hover:shadow-purple-500/50"
+                            }`}
+                    >
+                        <Send size={18} />
+                    </button>
+                </div>
             </div>
         );
     };
@@ -134,75 +144,116 @@ export const ChatWindow = () => {
 
             {isNewChat ? (
                 <div className="flex flex-col items-center justify-center flex-1 p-4 text-center">
-                    <h1
-                        className={`font-bold text-3xl md:text-4xl tracking-wide transition-colors duration-300 ${isDark ? "text-gray-200" : "text-gray-700"
-                            }`}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex flex-col items-center"
                     >
-                        {`${getGreeting()} ${user?.name || "there"}! 👋`}
-                    </h1>
-                    <p className={`mt-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-                        Start your new chat
-                    </p>
+                        <div className={`mb-6 p-4 rounded-full ${isDark ? "bg-purple-600/20" : "bg-purple-100"}`}>
+                            <Sparkles className={`w-12 h-12 ${isDark ? "text-purple-400" : "text-purple-600"}`} />
+                        </div>
+                        <h1
+                            className={`font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight transition-colors duration-300 px-4 ${isDark ? "text-gray-100" : "text-gray-800"
+                                }`}
+                        >
+                            {`${getGreeting()}, ${user?.name || "there"}! 👋`}
+                        </h1>
+                        <p className={`mt-4 text-base sm:text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                            What can I help you with today?
+                        </p>
+                    </motion.div>
                     <LocalInput />
                 </div>
             ) : (
                 <>
                     {/* Chat Area */}
-                    <div className="flex-1 overflow-y-auto p-4">
+                    <div className="flex-1 overflow-y-auto">
                         <Chat extraTypingAI={typingAI} />
                         <div ref={chatEndRef}></div>
 
                         {isLoading && typingAI === "" && (
-                            <div className="flex justify-start py-2">
-                                <ScaleLoader
-                                    color={isDark ? "#9333ea" : "#7e22ce"}
-                                    loading={isLoading}
-                                    height={15}
-                                />
+                            <div className={`w-full py-6 md:py-8 ${isDark ? "bg-gray-800/50" : "bg-white"}`}>
+                                <div className="max-w-3xl mx-auto px-4 md:px-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
+                                            }`}>
+                                            AI
+                                        </div>
+                                        <ScaleLoader
+                                            color={isDark ? "#9333ea" : "#7e22ce"}
+                                            loading={isLoading}
+                                            height={15}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
 
                     {/* Input Area */}
                     <div
-                        className={`p-4 border-t ${isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                        className={`p-4 md:p-6 border-t ${isDark ? "bg-gray-900 border-gray-800" : "bg-gray-50 border-gray-200"
                             } transition-colors duration-300`}
                     >
-                        <motion.div
-                            initial={{ y: 10, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            className="flex items-center gap-2"
-                        >
-                            <input
-                                type="text"
-                                placeholder="Ask anything..."
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                onKeyDown={(e) =>
-                                    e.key === "Enter" && !isLoading && sendMessage(prompt)
-                                }
-                                className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 ${isDark
-                                    ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500"
-                                    : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-purple-500"
-                                    } text-sm transition-colors duration-300`}
-                            />
-                            <button
-                                onClick={!isLoading ? () => sendMessage(prompt) : undefined}
-                                className={`p-2 rounded-full transition ${isDark
-                                    ? "bg-purple-600 hover:bg-purple-700 text-white"
-                                    : "bg-purple-500 hover:bg-purple-600 text-white"
-                                    }`}
+                        <div className="max-w-3xl mx-auto">
+                            <motion.div
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                className="flex items-end gap-2"
                             >
-                                <Send size={18} />
-                            </button>
-                        </motion.div>
-                        <p
-                            className={`mt-2 text-xs ${isDark ? "text-gray-400" : "text-gray-500"} text-center`}
-                        >
-                            Samva can make mistakes. Please check important information. <br />
-                            Samva remembers only your last 10 messages — just enough to keep your chat smooth and meaningful. 🧠
-                        </p>
-
+                                <div className="relative flex-1">
+                                    <textarea
+                                        rows="1"
+                                        placeholder="Ask anything..."
+                                        value={prompt}
+                                        onChange={(e) => {
+                                            setPrompt(e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = e.target.scrollHeight + 'px';
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" && !e.shiftKey && !isLoading) {
+                                                e.preventDefault();
+                                                sendMessage(prompt);
+                                                e.target.style.height = 'auto';
+                                            }
+                                        }}
+                                        className={`w-full px-4 py-3.5 border-2 rounded-3xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-32 transition-all duration-300 ${isDark
+                                            ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
+                                            : "bg-white border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-400"
+                                            } text-sm md:text-base`}
+                                        style={{ minHeight: '52px' }}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (!isLoading && prompt.trim()) {
+                                            sendMessage(prompt);
+                                            const textarea = document.querySelector('textarea');
+                                            if (textarea) textarea.style.height = 'auto';
+                                        }
+                                    }}
+                                    disabled={isLoading || !prompt.trim()}
+                                    className={`p-3.5 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading || !prompt.trim()
+                                        ? isDark
+                                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                        : isDark
+                                            ? "bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-purple-500/50"
+                                            : "bg-purple-500 hover:bg-purple-600 text-white shadow-lg hover:shadow-purple-500/50"
+                                        }`}
+                                >
+                                    <Send size={18} />
+                                </button>
+                            </motion.div>
+                            <p
+                                className={`mt-3 text-xs sm:text-sm ${isDark ? "text-gray-500" : "text-gray-600"} text-center px-2`}
+                            >
+                                Samva can make mistakes. Please check important information. <br className="hidden sm:inline" />
+                                <span className="inline sm:inline">Samva remembers only your last 10 messages — just enough to keep your chat smooth and meaningful. 🧠</span>
+                            </p>
+                        </div>
                     </div>
                 </>
             )}
