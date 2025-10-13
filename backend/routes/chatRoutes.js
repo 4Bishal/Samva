@@ -10,7 +10,7 @@ const router = express.Router();
 
 
 // ----------------------- GET ALL THREADS -----------------------
-router.get("/threads", async (req, res) => {
+router.get("/threads", verifyToken, async (req, res) => {
     try {
         const threads = await Thread.find({ user: req.userId }).sort({ updatedAt: -1 });
         res.status(200).json({ threads });
@@ -20,7 +20,7 @@ router.get("/threads", async (req, res) => {
 });
 
 // ----------------------- GET SINGLE THREAD -----------------------
-router.get("/threads/:threadId", async (req, res) => {
+router.get("/threads/:threadId", verifyToken, async (req, res) => {
     const { threadId } = req.params;
     try {
         const thread = await Thread.findOne({ threadId, user: req.userId });
@@ -32,7 +32,7 @@ router.get("/threads/:threadId", async (req, res) => {
 });
 
 // ----------------------- DELETE THREAD -----------------------
-router.delete("/threads/:threadId", async (req, res) => {
+router.delete("/threads/:threadId", verifyToken, async (req, res) => {
     const { threadId } = req.params;
     try {
         const thread = await Thread.findOneAndDelete({ threadId, user: req.userId });
@@ -48,7 +48,7 @@ router.delete("/threads/:threadId", async (req, res) => {
 });
 
 // ----------------------- CREATE/CHAT -----------------------
-router.post("/chat", async (req, res) => {
+router.post("/chat", verifyToken, async (req, res) => {
     const { threadId, message } = req.body;
     if (!threadId || !message) return res.status(400).json({ error: "Missing required fields" });
 
