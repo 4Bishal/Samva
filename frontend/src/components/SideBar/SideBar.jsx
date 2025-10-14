@@ -160,9 +160,15 @@ export const SideBar = ({ closeSidebar }) => {
                                         e.stopPropagation();
                                         deleteThread(thread.threadId);
                                     }}
-                                    className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
+                                    className={`flex-shrink-0 transition 
+        ${isDark
+                                            ? "text-red-500 sm:text-gray-400 hover:text-red-500"
+                                            : "text-red-500 sm:text-gray-400 hover:text-red-500"
+                                        } 
+        opacity-100 sm:opacity-0 group-hover:opacity-100`}
                                     size={14}
                                 />
+
                             </motion.li>
                         ))}
                     </AnimatePresence>
