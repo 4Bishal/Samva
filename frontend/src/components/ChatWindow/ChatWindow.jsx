@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Send, Sparkles } from "lucide-react";
+import { Send } from "lucide-react";
 import { ChatContext } from "../../context/ChatProvider";
 import { ThemeContext } from "../../utils/ThemeProvider";
 import { Chat } from "../Chat/Chat";
@@ -150,15 +150,14 @@ export const ChatWindow = () => {
                         transition={{ duration: 0.5 }}
                         className="flex flex-col items-center"
                     >
-                        <div className={`mb-6 p-4 rounded-full ${isDark ? "bg-purple-600/20" : "bg-purple-100"}`}>
-                            <Sparkles className={`w-12 h-12 ${isDark ? "text-purple-400" : "text-purple-600"}`} />
-                        </div>
                         <h1
                             className={`font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight transition-colors duration-300 px-4 ${isDark ? "text-gray-100" : "text-gray-800"
                                 }`}
                         >
-                            {`${getGreeting()}, ${user?.name || "there"}! 👋`}
+                            <span className="block">{getGreeting()},</span>
+                            <span className="block">{user?.name || "there"}! 👋</span>
                         </h1>
+
                         <p className={`mt-4 text-base sm:text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                             What can I help you with today?
                         </p>
