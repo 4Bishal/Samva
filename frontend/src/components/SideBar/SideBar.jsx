@@ -7,6 +7,7 @@ import { ChatContext } from "../../context/ChatProvider";
 import { ThemeContext } from "../../utils/ThemeProvider";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import { server } from "../../utils/environment";
 
 export const SideBar = ({ closeSidebar }) => {
     const {
@@ -25,7 +26,7 @@ export const SideBar = ({ closeSidebar }) => {
 
     const getAllThreads = async () => {
         try {
-            const response = await axios.get("http://localhost:8000/api/threads");
+            const response = await axios.get(`${server}/api/threads`);
             const threads = response.data.threads.map((t) => ({
                 threadId: t.threadId,
                 title: t.title,
@@ -53,7 +54,7 @@ export const SideBar = ({ closeSidebar }) => {
 
         if (firstMessage) {
             try {
-                const response = await axios.post("http://localhost:8000/api/chat", {
+                const response = await axios.post(`${server}/api/chat`, {
                     threadId: newThreadId,
                     message: firstMessage
                 });
@@ -78,7 +79,7 @@ export const SideBar = ({ closeSidebar }) => {
 
         try {
             const response = await axios.get(
-                `http://localhost:8000/api/threads/${newThreadId}`
+                `${server}/api/threads/${newThreadId}`
             );
             setChats(response.data.thread.message);
             setIsNewChat(false);
@@ -89,7 +90,7 @@ export const SideBar = ({ closeSidebar }) => {
 
     const deleteThread = async (threadId) => {
         try {
-            await axios.delete(`http://localhost:8000/api/threads/${threadId}`);
+            await axios.delete(`${server}/api/threads/${threadId}`);
             setAllThreads((prev) => prev.filter((t) => t.threadId !== threadId));
             if (threadId === currentThreadId) setIsNewChat(true);
         } catch (error) {

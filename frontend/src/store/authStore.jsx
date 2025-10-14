@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import axios from "axios";
 import { showCustomToast } from "../utils/customToast.js"; // Updated import
+import { server } from "../utils/environment.js";
 
-const baseUrl = "http://localhost:8000/api";
+const baseUrl = `${server}/api`;
 axios.defaults.withCredentials = true;
 
 export const useAuthStore = create((set) => ({

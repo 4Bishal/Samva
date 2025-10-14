@@ -8,6 +8,7 @@ import { NavBar } from "../NavBar/NavBar.jsx";
 import { useAuthStore } from "../../store/authStore";
 import { ScaleLoader } from "react-spinners";
 import axios from "axios";
+import { server } from "../../utils/environment.js";
 
 // Memoized LocalInput component
 const LocalInput = memo(({ isDark, isLoading, onSendMessage }) => {
@@ -282,7 +283,7 @@ export const ChatWindow = () => {
         setIsNewChat(false);
 
         try {
-            const response = await axios.post("http://localhost:8000/api/chat", {
+            const response = await axios.post(`${server}/api/chat`, {
                 message,
                 threadId: currentThreadId,
             });
