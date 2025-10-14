@@ -1,6 +1,6 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { LogIn, LogOut, UserPlus, Menu, X, Sun, Moon } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import DarkThemeLogo from "/src/assets/DarkThemeLogo.png";
 import LightThemeLogo from "/src/assets/LightThemeLogo.png";
 import { useAuthStore } from "../../store/authStore";
@@ -9,10 +9,23 @@ import { ThemeContext } from "../../utils/ThemeProvider";
 export const NavBar = () => {
     const { isAuthenticated, logout } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
     const { theme, toggleTheme } = useContext(ThemeContext);
-
     const isDark = theme === "dark";
+
+    // ✅ Smooth scroll when navigating with hash (/#home, /#about, etc.)
+    useEffect(() => {
+        if (location.hash) {
+            const sectionId = location.hash.replace("#", "");
+            const target = document.getElementById(sectionId);
+            if (target) {
+                setTimeout(() => {
+                    target.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            }
+        }
+    }, [location]);
 
     const handleLogout = async () => {
         try {
@@ -37,21 +50,51 @@ export const NavBar = () => {
     const hoverBg = isDark ? "hover:bg-gray-800/70" : "hover:bg-blue-50";
     const dropdownBg = isDark ? "bg-gray-900" : "bg-white";
 
+    // Reusable section links (Home, About, Contact)
+    const sectionLinks = ["home", "about", "contact"].map((section) => (
+        <Link
+            key={section}
+            to={`/#${section}`}
+            onClick={() => {
+                if (window.location.pathname === "/") {
+                    document
+                        .getElementById(section)
+                        ?.scrollIntoView({ behavior: "smooth" });
+                }
+                setMenuOpen(false);
+            }}
+            className={`${linkHover}`}
+        >
+            {section.charAt(0).toUpperCase() + section.slice(1)}
+        </Link>
+    ));
+
     return (
-        <nav className={`flex justify-between items-center px-6 py-4 sticky top-0 z-50 shadow-md transition-colors duration-500 ${navBg}`}>
+        <nav
+            className={`flex justify-between items-center px-6 py-4 sticky top-0 z-50 shadow-md transition-colors duration-500 ${navBg}`}
+        >
             {/* Logo */}
             <img
                 src={isDark ? DarkThemeLogo : LightThemeLogo}
                 alt="Logo"
                 className="h-10 md:h-12 lg:h-14 object-contain cursor-pointer"
-                onClick={() => navigate("/")}
+                onClick={() => {
+                    setMenuOpen(false); // ✅ closes mobile dropdown if open
+                    if (window.location.pathname === "/") {
+                        // ✅ already on home page → smooth scroll
+                        document.getElementById("home")?.scrollIntoView({ behavior: "smooth" });
+                    } else {
+                        // ✅ navigate to home section (/#home)
+                        navigate("/#home");
+                    }
+                }}
             />
+
+
 
             {/* Desktop Links */}
             <div className={`hidden md:flex space-x-8 font-medium ${textColor}`}>
-                <a href="#home" className={`${linkHover}`}>Home</a>
-                <a href="#about" className={`${linkHover}`}>About</a>
-                <a href="#contact" className={`${linkHover}`}>Contact</a>
+                {sectionLinks}
             </div>
 
             {/* Desktop Controls */}
@@ -62,7 +105,11 @@ export const NavBar = () => {
                     title="Toggle Theme"
                     className="p-2 rounded-full transition-all duration-300 hover:bg-gray-700/20"
                 >
-                    {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-blue-500" />}
+                    {isDark ? (
+                        <Sun size={18} className="text-yellow-400" />
+                    ) : (
+                        <Moon size={18} className="text-blue-500" />
+                    )}
                 </button>
 
                 {/* Auth buttons */}
@@ -98,7 +145,11 @@ export const NavBar = () => {
                     title="Toggle Theme"
                     className="p-2 rounded-full transition-colors duration-300"
                 >
-                    {isDark ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-blue-500" />}
+                    {isDark ? (
+                        <Sun size={20} className="text-yellow-400" />
+                    ) : (
+                        <Moon size={20} className="text-blue-500" />
+                    )}
                 </button>
 
                 <button
@@ -111,10 +162,10 @@ export const NavBar = () => {
 
             {/* Mobile Dropdown */}
             {menuOpen && (
-                <div className={`absolute top-16 left-0 w-full flex flex-col items-center space-y-5 py-6 border-t md:hidden z-40 ${dropdownBg} ${borderColor} ${textColor}`}>
-                    <a href="#home" onClick={() => setMenuOpen(false)} className={`${linkHover}`}>Home</a>
-                    <a href="#about" onClick={() => setMenuOpen(false)} className={`${linkHover}`}>About</a>
-                    <a href="#contact" onClick={() => setMenuOpen(false)} className={`${linkHover}`}>Contact</a>
+                <div
+                    className={`absolute top-16 left-0 w-full flex flex-col items-center space-y-5 py-6 border-t md:hidden z-40 ${dropdownBg} ${borderColor} ${textColor}`}
+                >
+                    {sectionLinks}
 
                     {!isAuthenticated ? (
                         <>

@@ -1,23 +1,35 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { showCustomToast } from "../utils/customToast.js"; // use custom toast
 
-// GuestRoute.jsx - REMOVE the checkAuth call
 export const GuestRoute = ({ children }) => {
-    const { user, isCheckingAuth } = useAuthStore();
+    const { user, isAuthenticated, isCheckingAuth } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
+    const prevKey = useRef(location.key);
+    const hasShownToast = useRef(false);
 
     useEffect(() => {
-        // Redirect logged-in users to main page
-        if (user && !isCheckingAuth) {
+        if (isCheckingAuth) return;
+
+        const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+
+        if (user && isAuthenticated && isAuthPage) {
+            // Only show toast if navigation key changed (manual visit)
+            if (location.key !== prevKey.current && !hasShownToast.current) {
+                showCustomToast("You are already logged in!", "info"); // replaced
+                hasShownToast.current = true;
+            }
+
             navigate("/", { replace: true });
         }
-    }, [user, isCheckingAuth]);
 
-    if (isCheckingAuth) {
-        return <LoadingSpinner />
-    }
+        prevKey.current = location.key;
+    }, [user, isAuthenticated, isCheckingAuth, location, navigate]);
+
+    if (isCheckingAuth) return <LoadingSpinner />;
 
     return !user ? children : null;
 };

@@ -84,3 +84,37 @@ html {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes toast-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-leave {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.animate-toast-enter {
+  animation: toast-enter 0.3s ease-out forwards;
+}
+
+.animate-toast-leave {
+  animation: toast-leave 0.3s ease-in forwards;
+}

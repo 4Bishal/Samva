@@ -1,11 +1,9 @@
-import { create } from "zustand"
-import axios from "axios"
+import { create } from "zustand";
+import axios from "axios";
+import { showCustomToast } from "../utils/customToast.js"; // Updated import
 
-
-
-const baseUrl = "http://localhost:8000/api"
+const baseUrl = "http://localhost:8000/api";
 axios.defaults.withCredentials = true;
-
 
 export const useAuthStore = create((set) => ({
     user: null,
@@ -15,16 +13,25 @@ export const useAuthStore = create((set) => ({
     isCheckingAuth: true,
     message: null,
 
-
     register: async (email, password, name) => {
-        set({ isLoading: true, error: null })
+        set({ isLoading: true, error: null });
 
         try {
             const response = await axios.post(`${baseUrl}/register`, { email, password, name });
-            set({ user: response.data.user, isAuthenticated: false, isLoading: false });
+            set({
+                user: response.data.user,
+                isAuthenticated: false,
+                isLoading: false,
+            });
+
+            // Show custom toast
+            showCustomToast("Account created successfully! Please login.", "success");
         } catch (err) {
-            set({ error: err.response.data.message || "Error registering ", isLoading: false });
-            throw err
+            const errorMessage = err.response?.data?.message || "Error registering";
+            set({ error: errorMessage, isLoading: false });
+
+            showCustomToast(errorMessage, "error");
+            throw err;
         }
     },
 
@@ -33,37 +40,67 @@ export const useAuthStore = create((set) => ({
 
         try {
             const response = await axios.post(`${baseUrl}/login`, { email, password });
-            set({ user: response.data.user, isAuthenticated: true, isLoading: false });
+            set({
+                user: response.data.user,
+                isAuthenticated: true,
+                isLoading: false,
+            });
+
+            showCustomToast(`Welcome back, ${response.data.user.name}!`, "success");
         } catch (err) {
-            set({ error: err.response?.data?.message || "Error while login", isLoading: false });
-            throw err
+            const errorMessage = err.response?.data?.message || "Error while login";
+            set({ error: errorMessage, isLoading: false });
+
+            showCustomToast(errorMessage, "error");
+            throw err;
         }
     },
-
 
     logout: async () => {
-        set({ isLoading: true, error: null })
+        set({ isLoading: true, error: null });
 
         try {
-            const response = await axios.post(`${baseUrl}/logout`);
-            set({ user: null, isAuthenticated: false, isLoading: false, error: null });
+            await axios.post(`${baseUrl}/logout`);
+            set({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+            });
+
+            showCustomToast("Logged out successfully!", "success");
         } catch (err) {
-            set({ error: err.response.data.message || "Error while logout ", isLoading: false });
-            throw err
+            const errorMessage = err.response?.data?.message || "Error while logout";
+            set({ error: errorMessage, isLoading: false });
+
+            showCustomToast(errorMessage, "error");
+            throw err;
         }
     },
+
     checkAuth: async () => {
         set({ isCheckingAuth: true });
         try {
             const res = await axios.post(`${baseUrl}/check-auth`);
             if (res.data.success) {
-                set({ user: res.data.user, isAuthenticated: true, isCheckingAuth: false });
+                set({
+                    user: res.data.user,
+                    isAuthenticated: true,
+                    isCheckingAuth: false,
+                });
             } else {
-                set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+                set({
+                    user: null,
+                    isAuthenticated: false,
+                    isCheckingAuth: false,
+                });
             }
         } catch {
-            set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+            set({
+                user: null,
+                isAuthenticated: false,
+                isCheckingAuth: false,
+            });
         }
-    }
-
-}))
+    },
+}));

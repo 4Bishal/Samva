@@ -35,7 +35,7 @@ It’s a **Nepali-inspired digital companion**, designed to make conversations w
 - [x] Text-based conversation
 - [ ] Voice conversation support
 - [ ] Photo & document understanding
-- [ ] Improved multi-turn conversation memory
+- [x] Improved multi-turn conversation memory
 
 ---
 
