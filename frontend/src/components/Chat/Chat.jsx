@@ -61,12 +61,12 @@ const CodeBlock = memo(({ node, inline, className, children, index, isDark, onCo
                         <button
                             onClick={handleCopy}
                             className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-all ${copiedCode === index
-                                    ? isDark
-                                        ? "bg-green-900/50 text-green-400 cursor-default"
-                                        : "bg-green-100 text-green-700 cursor-default"
-                                    : isDark
-                                        ? "hover:bg-gray-700 text-gray-400 hover:text-gray-200"
-                                        : "hover:bg-gray-200 text-gray-600 hover:text-gray-800"
+                                ? isDark
+                                    ? "bg-green-900/50 text-green-400 cursor-default"
+                                    : "bg-green-100 text-green-700 cursor-default"
+                                : isDark
+                                    ? "hover:bg-gray-700 text-gray-400 hover:text-gray-200"
+                                    : "hover:bg-gray-200 text-gray-600 hover:text-gray-800"
                                 }`}
                         >
                             {copiedCode === index ? (
@@ -145,11 +145,11 @@ const ChatMessage = memo(({ chat, idx, isDark, copiedCode, onCopy }) => {
                     )}
                     <div
                         className={`text-sm md:text-base ${isUser
-                                ? `rounded-2xl px-4 py-2.5 ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
-                                }`
-                                : isDark
-                                    ? "text-white"
-                                    : "text-gray-900"
+                            ? `rounded-2xl px-4 py-2.5 ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
+                            }`
+                            : isDark
+                                ? "text-white"
+                                : "text-gray-900"
                             }`}
                         style={{
                             lineHeight: "1.6",

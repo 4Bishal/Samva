@@ -286,6 +286,8 @@ export const ChatWindow = () => {
             const response = await axios.post(`${server}/api/chat`, {
                 message,
                 threadId: currentThreadId,
+            }, {
+                withCredentials: true, // <-- important
             });
 
             const aiReply = response.data.reply;

@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 8000;
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:5000", "https://samva.onrender.com"],
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true
 }));

@@ -26,7 +26,7 @@ export const SideBar = ({ closeSidebar }) => {
 
     const getAllThreads = async () => {
         try {
-            const response = await axios.get(`${server}/api/threads`);
+            const response = await axios.get(`${server}/api/threads`, { withCredentials: true });
             const threads = response.data.threads.map((t) => ({
                 threadId: t.threadId,
                 title: t.title,
@@ -57,7 +57,7 @@ export const SideBar = ({ closeSidebar }) => {
                 const response = await axios.post(`${server}/api/chat`, {
                     threadId: newThreadId,
                     message: firstMessage
-                });
+                }, { withCredentials: true });
 
                 const { threadTitle } = response.data;
 
@@ -79,7 +79,7 @@ export const SideBar = ({ closeSidebar }) => {
 
         try {
             const response = await axios.get(
-                `${server}/api/threads/${newThreadId}`
+                `${server}/api/threads/${newThreadId}`, { withCredentials: true }
             );
             setChats(response.data.thread.message);
             setIsNewChat(false);
@@ -90,7 +90,7 @@ export const SideBar = ({ closeSidebar }) => {
 
     const deleteThread = async (threadId) => {
         try {
-            await axios.delete(`${server}/api/threads/${threadId}`);
+            await axios.delete(`${server}/api/threads/${threadId}`, { withCredentials: true });
             setAllThreads((prev) => prev.filter((t) => t.threadId !== threadId));
             if (threadId === currentThreadId) setIsNewChat(true);
         } catch (error) {

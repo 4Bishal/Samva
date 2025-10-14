@@ -4,18 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run build && node server.js",
+    "start": "node server.js"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.13",
     "axios": "^1.12.2",
+    "express": "^4.18.2",
     "framer-motion": "^12.23.22",
     "highlight.js": "^11.11.1",
     "lucide-react": "^0.544.0",
+    "path": "^0.12.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
@@ -24,6 +26,7 @@
     "react-spinners": "^0.17.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
+    "url": "^0.11.4",
     "uuid": "^13.0.0",
     "zustand": "^5.0.8"
   },
