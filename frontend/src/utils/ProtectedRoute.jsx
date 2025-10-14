@@ -1,26 +1,22 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { showCustomToast } from "../utils/customToast.js"; // use custom toast
+import { showCustomToast } from "../utils/customToast.js";
 
 export const ProtectedRoute = ({ children }) => {
     const { user, isCheckingAuth } = useAuthStore();
-    const navigate = useNavigate();
 
-    useEffect(() => {
-        // Redirect if not logged in AND auth check is finished
-        if (!user && !isCheckingAuth) {
-            showCustomToast("Please login to access this page", "warning"); // replaced
-            navigate("/login", { replace: true });
-        }
-    }, [user, isCheckingAuth, navigate]);
-
-    // Show loading while checking auth
+    // Show loading spinner while checking auth
     if (isCheckingAuth) {
         return <LoadingSpinner />;
     }
 
-    // Only render children if user exists
-    return user ? children : null;
+    // If user is not authenticated, redirect to login with a toast
+    if (!user) {
+        showCustomToast("Please login to access this page", "warning");
+        return <Navigate to="/login" replace />;
+    }
+
+    // If user exists, render the protected content
+    return children;
 };
