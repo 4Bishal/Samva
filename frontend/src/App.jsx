@@ -13,15 +13,26 @@ import { RegisterPage } from "./pages/RegisterPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { NotFound } from "./pages/NotFound.jsx";
 import { useAuthStore } from "./store/authStore.jsx";
-
-
+import { LoadingSpinner } from "./components/LoadingSpinner.jsx";
+import { showCustomToast } from "./utils/customToast.js";
 
 function App() {
-  const { checkAuth } = useAuthStore();
+  const { checkAuth, isCheckingAuth } = useAuthStore();
+
+  const [showColdStartMsg, setShowColdStartMsg] = useState(false);
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+
+    // Show cold-start message if auth check takes longer than 3s
+    const timer = setTimeout(() => {
+      if (isCheckingAuth) {
+        setShowColdStartMsg(true);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [checkAuth, isCheckingAuth]);
 
   const [prompt, setPrompt] = useState("");
   const [reply, setReply] = useState(null);
@@ -45,15 +56,24 @@ function App() {
     setAllThreads,
   };
 
+  // Show loading spinner + cold start message if auth is still checking
+  if (isCheckingAuth) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <LoadingSpinner />
+        {showColdStartMsg && (
+          <p className="mt-4 text-gray-500 text-center">
+            Server is waking up… this may take a few seconds.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <ThemeProvider>
       <ChatContext.Provider value={providerValues}>
-        {/* Toast container */}
-        <Toaster
-          position="top-right"
-          reverseOrder={false}
-        />
-
+        <Toaster position="top-right" reverseOrder={false} />
         <Router>
           <Routes>
             <Route
