@@ -1,7 +1,11 @@
 # Samva 🗣️
 
+![Samva Logo](public/DarkThemeLogo.png)
+
 **Samva** (संवाद) is a MERN stack project that brings **AI-powered conversations** to life.  
 It uses a **Generative AI API** to provide intelligent, text-based responses — just like chatting with a smart companion.
+
+🌐 **Live Demo:** [https://samva.onrender.com](https://samva.onrender.com)
 
 ---
 
