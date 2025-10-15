@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SquarePen, Trash2 } from "lucide-react";
 import LightThemeLogo from "../../assets/LightThemeLogo.png";
@@ -23,6 +23,8 @@ export const SideBar = ({ closeSidebar }) => {
 
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
+
+    const [threadToDelete, setThreadToDelete] = useState(null); // store thread pending deletion
 
     const getAllThreads = async () => {
         try {
@@ -49,7 +51,6 @@ export const SideBar = ({ closeSidebar }) => {
         setChats([]);
         setIsNewChat(true);
 
-        // Close sidebar on mobile after creating new chat
         if (closeSidebar) closeSidebar();
 
         if (firstMessage) {
@@ -73,19 +74,18 @@ export const SideBar = ({ closeSidebar }) => {
 
     const changeThreadId = async (newThreadId) => {
         setCurrentThreadId(newThreadId);
-
-        // Close sidebar on mobile after selecting thread
         if (closeSidebar) closeSidebar();
-
         try {
-            const response = await axios.get(
-                `${server}/api/threads/${newThreadId}`, { withCredentials: true }
-            );
+            const response = await axios.get(`${server}/api/threads/${newThreadId}`, { withCredentials: true });
             setChats(response.data.thread.message);
             setIsNewChat(false);
         } catch (error) {
             console.log(error);
         }
+    };
+
+    const confirmDeleteThread = (thread) => {
+        setThreadToDelete(thread);
     };
 
     const deleteThread = async (threadId) => {
@@ -95,6 +95,8 @@ export const SideBar = ({ closeSidebar }) => {
             if (threadId === currentThreadId) setIsNewChat(true);
         } catch (error) {
             console.log(error);
+        } finally {
+            setThreadToDelete(null);
         }
     };
 
@@ -109,9 +111,7 @@ export const SideBar = ({ closeSidebar }) => {
                 <button
                     onClick={() => createNewChatWithTitle("")}
                     className={`p-1.5 sm:p-2 rounded transition-all duration-300
-                        ${isDark ?
-                            'bg-gray-800 hover:bg-gray-700 text-white' :
-                            'bg-white hover:bg-gray-200 text-gray-900'} 
+                        ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white hover:bg-gray-200 text-gray-900'} 
                         shadow-sm hover:shadow-md`}
                 >
                     <SquarePen size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -159,17 +159,13 @@ export const SideBar = ({ closeSidebar }) => {
                                 <Trash2
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        deleteThread(thread.threadId);
+                                        confirmDeleteThread(thread);
                                     }}
                                     className={`flex-shrink-0 transition 
-        ${isDark
-                                            ? "text-red-500 sm:text-gray-400 hover:text-red-500"
-                                            : "text-red-500 sm:text-gray-400 hover:text-red-500"
-                                        } 
-        opacity-100 sm:opacity-0 group-hover:opacity-100`}
+                                        ${isDark ? "text-red-500 sm:text-gray-400 hover:text-red-500" : "text-red-500 sm:text-gray-400 hover:text-red-500"} 
+                                        opacity-100 sm:opacity-0 group-hover:opacity-100`}
                                     size={14}
                                 />
-
                             </motion.li>
                         ))}
                     </AnimatePresence>
@@ -181,6 +177,43 @@ export const SideBar = ({ closeSidebar }) => {
                 ${isDark ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-500"}`}>
                 By <span className="text-purple-600 font-semibold">Samva ♥</span>
             </div>
+
+            {/* Confirmation Modal */}
+            <AnimatePresence>
+                {threadToDelete && (
+                    <motion.div
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            className={`w-80 p-4 rounded-lg shadow-lg flex flex-col items-center text-center
+                                ${isDark ? "bg-gray-800 text-gray-200" : "bg-white text-gray-900"}`}
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.8 }}
+                        >
+                            <p className="mb-4 font-semibold">Are you sure you want to delete this chat?</p>
+                            <p className="mb-4 text-sm italic text-gray-400 truncate">{threadToDelete.title}</p>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setThreadToDelete(null)}
+                                    className={`px-4 py-2 rounded ${isDark ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"}`}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => deleteThread(threadToDelete.threadId)}
+                                    className={`px-4 py-2 rounded ${isDark ? "bg-red-600 hover:bg-red-500 text-white" : "bg-red-500 hover:bg-red-400 text-white"}`}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </aside>
     );
 };
