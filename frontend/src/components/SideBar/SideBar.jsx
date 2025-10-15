@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SquarePen, Trash2 } from "lucide-react";
+import { SquarePen, Trash2, AlertTriangle } from "lucide-react";
 import LightThemeLogo from "../../assets/LightThemeLogo.png";
 import DarkThemeLogo from "../../assets/DarkThemeLogo.png";
 import { ChatContext } from "../../context/ChatProvider";
@@ -24,7 +24,7 @@ export const SideBar = ({ closeSidebar }) => {
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
 
-    const [threadToDelete, setThreadToDelete] = useState(null); // store thread pending deletion
+    const [threadToDelete, setThreadToDelete] = useState(null);
 
     const getAllThreads = async () => {
         try {
@@ -92,7 +92,15 @@ export const SideBar = ({ closeSidebar }) => {
         try {
             await axios.delete(`${server}/api/threads/${threadId}`, { withCredentials: true });
             setAllThreads((prev) => prev.filter((t) => t.threadId !== threadId));
-            if (threadId === currentThreadId) setIsNewChat(true);
+
+            if (threadId === currentThreadId) {
+                const newThreadId = uuidv4();
+                setCurrentThreadId(newThreadId);
+                setChats([]);
+                setIsNewChat(true);
+                setPrompt("");
+                setReply(null);
+            }
         } catch (error) {
             console.log(error);
         } finally {
@@ -178,37 +186,86 @@ export const SideBar = ({ closeSidebar }) => {
                 By <span className="text-purple-600 font-semibold">Samva ♥</span>
             </div>
 
-            {/* Confirmation Modal */}
+            {/* Enhanced Confirmation Modal */}
             <AnimatePresence>
                 {threadToDelete && (
                     <motion.div
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        onClick={() => setThreadToDelete(null)}
                     >
                         <motion.div
-                            className={`w-80 p-4 rounded-lg shadow-lg flex flex-col items-center text-center
-                                ${isDark ? "bg-gray-800 text-gray-200" : "bg-white text-gray-900"}`}
-                            initial={{ scale: 0.8 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0.8 }}
+                            className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden
+                                ${isDark ? "bg-gray-800" : "bg-white"}`}
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", duration: 0.5 }}
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <p className="mb-4 font-semibold">Are you sure you want to delete this chat?</p>
-                            <p className="mb-4 text-sm italic text-gray-400 truncate">{threadToDelete.title}</p>
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => setThreadToDelete(null)}
-                                    className={`px-4 py-2 rounded ${isDark ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"}`}
+                            {/* Header with Icon */}
+                            <div className={`flex flex-col items-center pt-6 pb-4 px-6
+                                ${isDark ? "bg-gradient-to-b from-red-900/20 to-transparent" : "bg-gradient-to-b from-red-50 to-transparent"}`}>
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.1, type: "spring" }}
+                                    className={`w-16 h-16 rounded-full flex items-center justify-center mb-4
+                                        ${isDark ? "bg-red-500/20" : "bg-red-100"}`}
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => deleteThread(threadToDelete.threadId)}
-                                    className={`px-4 py-2 rounded ${isDark ? "bg-red-600 hover:bg-red-500 text-white" : "bg-red-500 hover:bg-red-400 text-white"}`}
-                                >
-                                    Delete
-                                </button>
+                                    <AlertTriangle
+                                        className={`${isDark ? "text-red-400" : "text-red-500"}`}
+                                        size={32}
+                                        strokeWidth={2}
+                                    />
+                                </motion.div>
+
+                                <h3 className={`text-xl font-bold mb-2
+                                    ${isDark ? "text-gray-100" : "text-gray-900"}`}>
+                                    Delete Chat?
+                                </h3>
+                            </div>
+
+                            {/* Content */}
+                            <div className="px-6 pb-6">
+                                <p className={`text-sm text-center mb-2
+                                    ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                                    This action cannot be undone. This will permanently delete your chat:
+                                </p>
+
+                                <div className={`p-3 rounded-lg mb-6 text-center
+                                    ${isDark ? "bg-gray-900/50" : "bg-gray-50"}`}>
+                                    <p className={`text-sm font-medium truncate
+                                        ${isDark ? "text-purple-400" : "text-purple-600"}`}>
+                                        "{threadToDelete.title}"
+                                    </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setThreadToDelete(null)}
+                                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
+                                            ${isDark
+                                                ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                                                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                            } hover:scale-[1.02] active:scale-[0.98]`}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => deleteThread(threadToDelete.threadId)}
+                                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
+                                            ${isDark
+                                                ? "bg-red-600 hover:bg-red-500"
+                                                : "bg-red-500 hover:bg-red-600"
+                                            } text-white shadow-lg hover:shadow-red-500/50 hover:scale-[1.02] active:scale-[0.98]`}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
