@@ -22,16 +22,16 @@ function App() {
 
   useEffect(() => {
     checkAuth();
+  }, [checkAuth]);
 
-    // Show cold-start message if auth check takes longer than 3s
-    const timer = setTimeout(() => {
-      if (isCheckingAuth) {
-        setShowColdStartMsg(true);
-      }
-    }, 3000);
+  useEffect(() => {
+    if (isCheckingAuth) {
+      const timer = setTimeout(() => setShowColdStartMsg(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isCheckingAuth]);
 
-    return () => clearTimeout(timer);
-  }, [checkAuth, isCheckingAuth]);
+
 
   const [prompt, setPrompt] = useState("");
   const [reply, setReply] = useState(null);
