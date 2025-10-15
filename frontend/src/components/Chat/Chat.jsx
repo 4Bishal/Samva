@@ -8,7 +8,6 @@ import remarkGfm from "remark-gfm";
 import { Copy, Check } from "lucide-react";
 import "highlight.js/styles/github-dark.css";
 
-// Memoized CodeBlock component to prevent unnecessary re-renders
 const CodeBlock = memo(({ node, inline, className, children, index, isDark, onCopy, copiedCode }) => {
     const match = /language-(\w+)/.exec(className || "");
     const codeString = useMemo(() => {
@@ -33,7 +32,7 @@ const CodeBlock = memo(({ node, inline, className, children, index, isDark, onCo
             },
             {
                 threshold: 0.1,
-                rootMargin: '50px' // Load slightly before entering viewport
+                rootMargin: '50px'
             }
         );
 
@@ -47,16 +46,15 @@ const CodeBlock = memo(({ node, inline, className, children, index, isDark, onCo
 
     if (!inline && match) {
         return (
-            <div ref={ref} className="relative group my-4">
+            <div ref={ref} className="relative group my-3">
                 <div
-                    className={`flex items-center justify-between px-4 py-2 rounded-t-lg ${isDark ? "bg-gray-800 border-b border-gray-700" : "bg-gray-100 border-b border-gray-200"
+                    className={`flex items-center justify-between px-3 py-1.5 rounded-t-lg ${isDark ? "bg-gray-800 border-b border-gray-700" : "bg-gray-100 border-b border-gray-200"
                         }`}
                 >
                     <span className={`text-xs font-semibold ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                         {match[1].toUpperCase()}
                     </span>
 
-                    {/* Optimized copy button - only renders when visible */}
                     {isVisible && (
                         <button
                             onClick={handleCopy}
@@ -102,11 +100,9 @@ const CodeBlock = memo(({ node, inline, className, children, index, isDark, onCo
 
 CodeBlock.displayName = 'CodeBlock';
 
-// Memoized ChatMessage component
 const ChatMessage = memo(({ chat, idx, isDark, copiedCode, onCopy }) => {
     const isUser = chat.role === "user";
 
-    // Memoized markdown components
     const markdownComponents = useMemo(() => ({
         code: (props) => (
             <CodeBlock {...props} index={idx} isDark={isDark} onCopy={onCopy} copiedCode={copiedCode} />
@@ -126,14 +122,14 @@ const ChatMessage = memo(({ chat, idx, isDark, copiedCode, onCopy }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-full py-6 md:py-8"
+            className="w-full py-4"
         >
-            <div className="max-w-3xl mx-auto px-4 md:px-6">
-                <div className={`${isUser ? "ml-auto w-fit max-w-[85%] md:max-w-[70%]" : "w-full"}`}>
+            <div className="max-w-3xl mx-auto px-4">
+                <div className={`${isUser ? "ml-auto w-fit max-w-[85%] md:max-w-[75%]" : "w-full"}`}>
                     {!isUser && (
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-2">
                             <div
-                                className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
                                     }`}
                             >
                                 AI
@@ -144,15 +140,15 @@ const ChatMessage = memo(({ chat, idx, isDark, copiedCode, onCopy }) => {
                         </div>
                     )}
                     <div
-                        className={`text-sm md:text-base ${isUser
-                            ? `rounded-2xl px-4 py-2.5 ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
+                        className={`text-sm ${isUser
+                            ? `rounded-2xl px-3.5 py-2 ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
                             }`
                             : isDark
                                 ? "text-white"
                                 : "text-gray-900"
                             }`}
                         style={{
-                            lineHeight: "1.6",
+                            lineHeight: "1.5",
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word",
                         }}
@@ -160,7 +156,7 @@ const ChatMessage = memo(({ chat, idx, isDark, copiedCode, onCopy }) => {
                         {isUser ? (
                             chat.content
                         ) : (
-                            <div className={`prose prose-sm md:prose ${isDark ? "prose-invert" : ""} max-w-full`}>
+                            <div className={`prose prose-sm ${isDark ? "prose-invert" : ""} max-w-full`}>
                                 <Markdown
                                     rehypePlugins={[rehypeHighlight]}
                                     remarkPlugins={[remarkGfm]}
@@ -179,7 +175,6 @@ const ChatMessage = memo(({ chat, idx, isDark, copiedCode, onCopy }) => {
 
 ChatMessage.displayName = 'ChatMessage';
 
-// Memoized TypingIndicator component
 const TypingIndicator = memo(({ isDark }) => (
     <div className="flex gap-1 ml-1">
         {[0, 1, 2].map((i) => (
@@ -202,7 +197,6 @@ export const Chat = ({ extraTypingAI }) => {
 
     const [copiedCode, setCopiedCode] = useState(null);
 
-    // Memoized copy function
     const copyToClipboard = useCallback(async (text, index) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -213,7 +207,6 @@ export const Chat = ({ extraTypingAI }) => {
         }
     }, []);
 
-    // Memoized markdown components for typing AI
     const typingMarkdownComponents = useMemo(() => ({
         code: (props) => (
             <CodeBlock
@@ -239,19 +232,18 @@ export const Chat = ({ extraTypingAI }) => {
                 />
             ))}
 
-            {/* Typing overlay - optimized with memoization */}
             {extraTypingAI && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="w-full py-6 md:py-8"
+                    className="w-full py-4"
                 >
-                    <div className="max-w-3xl mx-auto px-4 md:px-6">
+                    <div className="max-w-3xl mx-auto px-4">
                         <div className="w-full">
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="flex items-center gap-2 mb-2">
                                 <div
-                                    className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
                                         }`}
                                 >
                                     AI
@@ -261,8 +253,8 @@ export const Chat = ({ extraTypingAI }) => {
                                 </span>
                                 <TypingIndicator isDark={isDark} />
                             </div>
-                            <div className={`text-sm md:text-base ${isDark ? "text-white" : "text-gray-900"}`}>
-                                <div className={`prose prose-sm md:prose ${isDark ? "prose-invert" : ""} max-w-full`}>
+                            <div className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+                                <div className={`prose prose-sm ${isDark ? "prose-invert" : ""} max-w-full`}>
                                     <Markdown
                                         rehypePlugins={[rehypeHighlight]}
                                         remarkPlugins={[remarkGfm]}

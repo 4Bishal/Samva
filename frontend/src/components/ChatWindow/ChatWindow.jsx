@@ -18,7 +18,7 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage }) => {
     const adjustHeight = useCallback((textarea) => {
         requestAnimationFrame(() => {
             textarea.style.height = 'auto';
-            textarea.style.height = `${Math.min(textarea.scrollHeight, 128)}px`;
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
         });
     }, []);
 
@@ -26,7 +26,6 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage }) => {
         if (!localPrompt.trim()) return;
         onSendMessage(localPrompt);
         setLocalPrompt("");
-        // Reset height after sending
         if (textareaRef.current) {
             requestAnimationFrame(() => {
                 textareaRef.current.style.height = 'auto';
@@ -47,7 +46,7 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage }) => {
     }, [isLoading, handleSend]);
 
     return (
-        <div className="flex mt-8 sm:mt-10 justify-center px-4 w-full">
+        <div className="flex mt-6 justify-center px-4 w-full">
             <div className="flex items-end gap-2 w-full max-w-3xl">
                 <div className="relative flex-1">
                     <textarea
@@ -57,12 +56,12 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage }) => {
                         value={localPrompt}
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
-                        className={`w-full px-4 py-3.5 text-sm md:text-base border-2 rounded-3xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-32 transition-all duration-200 ${isDark
+                        className={`w-full px-3.5 py-2.5 text-sm border-2 rounded-2xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-[120px] transition-all duration-200 ${isDark
                             ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
                             : "bg-white border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-400"
                             }`}
                         style={{
-                            minHeight: '52px',
+                            minHeight: '44px',
                             transition: 'height 0.1s ease-out'
                         }}
                     />
@@ -70,7 +69,7 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage }) => {
                 <button
                     onClick={handleSend}
                     disabled={isLoading || !localPrompt.trim()}
-                    className={`p-3.5 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading || !localPrompt.trim()
+                    className={`p-2.5 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading || !localPrompt.trim()
                         ? isDark
                             ? "bg-gray-700 text-gray-500 cursor-not-allowed"
                             : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -106,7 +105,7 @@ const GreetingScreen = memo(({ isDark, userName, greeting, onSendMessage, isLoad
                     <span className="block">{userName || "there"}! 👋</span>
                 </h1>
 
-                <p className={`mt-4 text-base sm:text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                <p className={`mt-3 text-base ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                     What can I help you with today?
                 </p>
             </motion.div>
@@ -120,11 +119,11 @@ GreetingScreen.displayName = 'GreetingScreen';
 // Memoized LoadingIndicator component
 const LoadingIndicator = memo(({ isDark }) => {
     return (
-        <div className={`w-full py-6 md:py-8 ${isDark ? "bg-gray-800/50" : "bg-white"}`}>
-            <div className="max-w-3xl mx-auto px-4 md:px-6">
-                <div className="flex items-center gap-3">
+        <div className={`w-full py-4 ${isDark ? "bg-gray-800/50" : "bg-white"}`}>
+            <div className="max-w-3xl mx-auto px-4">
+                <div className="flex items-center gap-2.5">
                     <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isDark ? "bg-purple-600 text-white" : "bg-purple-500 text-white"
                             }`}
                     >
                         AI
@@ -150,7 +149,7 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage })
         setPrompt(e.target.value);
         requestAnimationFrame(() => {
             e.target.style.height = 'auto';
-            e.target.style.height = `${Math.min(e.target.scrollHeight, 128)}px`;
+            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
         });
     }, [setPrompt]);
 
@@ -177,7 +176,7 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage })
 
     return (
         <div
-            className={`p-4 md:p-6 border-t ${isDark ? "bg-gray-900 border-gray-800" : "bg-gray-50 border-gray-200"
+            className={`p-3 border-t ${isDark ? "bg-gray-900 border-gray-800" : "bg-gray-50 border-gray-200"
                 } transition-colors duration-300`}
         >
             <div className="max-w-3xl mx-auto">
@@ -194,12 +193,12 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage })
                             value={prompt}
                             onChange={handleChange}
                             onKeyDown={handleKeyDown}
-                            className={`w-full px-4 py-3.5 border-2 rounded-3xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-32 transition-all duration-200 ${isDark
+                            className={`w-full px-3.5 py-2.5 border-2 rounded-2xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-[120px] transition-all duration-200 text-sm ${isDark
                                 ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
                                 : "bg-white border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-400"
-                                } text-sm md:text-base`}
+                                }`}
                             style={{
-                                minHeight: '52px',
+                                minHeight: '44px',
                                 transition: 'height 0.1s ease-out'
                             }}
                         />
@@ -207,7 +206,7 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage })
                     <button
                         onClick={handleSend}
                         disabled={isLoading || !prompt.trim()}
-                        className={`p-3.5 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading || !prompt.trim()
+                        className={`p-2.5 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading || !prompt.trim()
                             ? isDark
                                 ? "bg-gray-700 text-gray-500 cursor-not-allowed"
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -220,7 +219,7 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage })
                     </button>
                 </motion.div>
                 <p
-                    className={`mt-3 text-xs sm:text-sm ${isDark ? "text-gray-500" : "text-gray-600"} text-center px-2`}
+                    className={`mt-2 text-xs ${isDark ? "text-gray-500" : "text-gray-600"} text-center px-2`}
                 >
                     Samva can make mistakes. Please check important information. <br className="hidden sm:inline" />
                     <span className="inline sm:inline">Samva remembers only your last 10 messages — just enough to keep your chat smooth and meaningful. 🧠</span>
@@ -251,7 +250,6 @@ export const ChatWindow = () => {
     const [typingAI, setTypingAI] = useState("");
     const chatEndRef = useRef(null);
 
-    // Memoized greeting to prevent recalculation
     const greeting = useMemo(() => {
         const now = new Date();
         const utcHours = now.getUTCHours();
@@ -261,7 +259,7 @@ export const ChatWindow = () => {
         if (nepalHours < 12) return "Good morning";
         else if (nepalHours < 18) return "Good afternoon";
         else return "Good evening";
-    }, []); // Only calculate once on mount
+    }, []);
 
     const scrollToBottom = useCallback(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -271,7 +269,6 @@ export const ChatWindow = () => {
         scrollToBottom();
     }, [chats, typingAI, scrollToBottom]);
 
-    // Memoized sendMessage function
     const sendMessage = useCallback(async (message) => {
         if (!message.trim()) return;
 
@@ -287,7 +284,7 @@ export const ChatWindow = () => {
                 message,
                 threadId: currentThreadId,
             }, {
-                withCredentials: true, // <-- important
+                withCredentials: true,
             });
 
             const aiReply = response.data.reply;
@@ -324,7 +321,6 @@ export const ChatWindow = () => {
                 />
             ) : (
                 <>
-                    {/* Chat Area */}
                     <div className="flex-1 overflow-y-auto">
                         <Chat extraTypingAI={typingAI} />
                         <div ref={chatEndRef}></div>
@@ -334,7 +330,6 @@ export const ChatWindow = () => {
                         )}
                     </div>
 
-                    {/* Input Area */}
                     <MainInput
                         prompt={prompt}
                         setPrompt={setPrompt}
