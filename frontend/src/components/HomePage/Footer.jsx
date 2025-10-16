@@ -37,7 +37,15 @@ export const Footer = () => {
 
             {/* Footer Text */}
             <p className={`text-sm md:text-base font-medium tracking-wide ${colors.subText}`}>
-                © {new Date().getFullYear()} <span className={`${colors.primary} font-semibold`}>Samva</span>. All rights reserved.
+                © {new Date().getFullYear()} <span className={`${colors.primary} font-semibold`}>Samva</span>. All rights reserved. — Built by{" "}
+                <a
+                    href="https://www.bhandari-bishal.com.np"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`hover:underline ${colors.primary}`}
+                >
+                    Bishal Bhandari
+                </a>
             </p>
 
             <p className={`mt-2 text-xs md:text-sm ${colors.subText}`}>
