@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { showCustomToast } from "../utils/customToast.js";
+import { useEffect } from "react";
 
 export const ProtectedRoute = ({ children }) => {
     const { user, isCheckingAuth } = useAuthStore();
@@ -13,7 +14,9 @@ export const ProtectedRoute = ({ children }) => {
 
     // If user is not authenticated, redirect to login with a toast
     if (!user) {
-        showCustomToast("Please login to access this page", "warning");
+        useEffect(() => {
+            showCustomToast("Please login to access this page", "warning");
+        }, []);
         return <Navigate to="/login" replace />;
     }
 
