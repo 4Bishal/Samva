@@ -194,29 +194,73 @@ const DNAHelixVisualizer = memo(({ volume, isDark }) => {
 DNAHelixVisualizer.displayName = 'DNAHelixVisualizer';
 
 // Hook for voice input
+// Hook for voice input
 const useVoiceInput = (setPrompt, selectedLanguage) => {
     const [isListening, setIsListening] = useState(false);
     const [volume, setVolume] = useState(0);
+    const [isMicAvailable, setIsMicAvailable] = useState(true);
     const basePromptRef = useRef("");
     const lastTranscriptLengthRef = useRef(0);
     const audioContextRef = useRef(null);
     const rafIdRef = useRef(null);
+    const hasShownErrorRef = useRef(false);
+    const recognitionRef = useRef(null);
+    const accumulatedTranscriptRef = useRef("");
+    const isStoppingRef = useRef(false);
+    const errorCountRef = useRef(0);
+    const lastErrorTimeRef = useRef(0);
 
     const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
-    // Check if speech recognition is available
+    // Check if speech recognition and mic are available
     useEffect(() => {
-        if (!browserSupportsSpeechRecognition) {
-            console.warn('Speech recognition is not supported in this browser');
-            showCustomToast('Speech recognition is not supported in this browser', "warning");
-        }
+        let isMounted = true;
 
-        // Check if running on HTTPS or localhost
-        const isSecureContext = window.isSecureContext;
-        if (!isSecureContext) {
-            console.error('Speech recognition requires HTTPS in production');
-            showCustomToast('Speech recognition requires HTTPS in production', "error");
-        }
+        const checkAvailability = async () => {
+            // Check browser support
+            if (!browserSupportsSpeechRecognition) {
+                if (isMounted) {
+                    setIsMicAvailable(false);
+                    console.warn('Speech recognition not supported');
+                }
+                return;
+            }
+
+            // Check secure context
+            if (!window.isSecureContext) {
+                if (isMounted) {
+                    setIsMicAvailable(false);
+                    console.warn('Speech recognition requires HTTPS');
+                }
+                return;
+            }
+
+            // Check microphone availability
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop());
+                    if (isMounted) {
+                        setIsMicAvailable(true);
+                    }
+                } else {
+                    if (isMounted) {
+                        setIsMicAvailable(false);
+                    }
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setIsMicAvailable(false);
+                    console.warn('Microphone not available:', error);
+                }
+            }
+        };
+
+        checkAvailability();
+
+        return () => {
+            isMounted = false;
+        };
     }, [browserSupportsSpeechRecognition]);
 
     // Audio volume analysis
@@ -256,47 +300,178 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             })
             .catch(error => {
                 console.error('Microphone access error:', error);
-                alert('Unable to access microphone. Please check permissions.');
                 setIsListening(false);
+                setIsMicAvailable(false);
+
+                if (!hasShownErrorRef.current) {
+                    showCustomToast('Unable to access microphone. Please check permissions.', 'error');
+                    hasShownErrorRef.current = true;
+                }
             });
 
         return cleanup;
     }, [isListening]);
 
-    // Update prompt with transcript
+    // Update prompt with transcript - Simple approach for all browsers
     useEffect(() => {
         if (!isListening) return;
 
-        const currentLength = transcript.length;
-        if (currentLength !== lastTranscriptLengthRef.current) {
-            const newPrompt = basePromptRef.current
-                ? `${basePromptRef.current} ${transcript}`.trim()
-                : transcript;
+        if (transcript) {
+            const trimmedTranscript = transcript.trim();
 
-            setPrompt(newPrompt);
-            lastTranscriptLengthRef.current = currentLength;
+            if (trimmedTranscript) {
+                const newPrompt = basePromptRef.current
+                    ? `${basePromptRef.current} ${trimmedTranscript}`.trim()
+                    : trimmedTranscript;
+
+                setPrompt(newPrompt);
+            }
         }
     }, [transcript, isListening, setPrompt]);
 
+    // Handle speech recognition events - FIXED INFINITE ERROR LOOP
+    useEffect(() => {
+        if (!isListening || !browserSupportsSpeechRecognition) return;
+
+        const recognition = SpeechRecognition.getRecognition();
+        if (!recognition) return;
+
+        recognitionRef.current = recognition;
+
+        // Handle errors with throttling
+        const handleError = (event) => {
+            console.error('Speech recognition error:', event.error);
+
+            const now = Date.now();
+            const timeSinceLastError = now - lastErrorTimeRef.current;
+
+            // Throttle error messages - only show once every 3 seconds
+            if (timeSinceLastError < 3000) {
+                errorCountRef.current++;
+
+                // If too many errors in short time, stop listening
+                if (errorCountRef.current > 3) {
+                    console.warn('Too many errors, stopping speech recognition');
+                    setIsListening(false);
+                    setIsMicAvailable(false);
+                    SpeechRecognition.stopListening();
+                    return;
+                }
+            } else {
+                errorCountRef.current = 1;
+            }
+
+            lastErrorTimeRef.current = now;
+
+            // Handle specific errors
+            if (event.error === 'no-speech') {
+                // Don't show error for no-speech, it's normal
+                console.log('No speech detected');
+            } else if (event.error === 'audio-capture') {
+                showCustomToast('Microphone error. Please check your microphone.', 'error');
+                setIsMicAvailable(false);
+                setIsListening(false);
+                SpeechRecognition.stopListening();
+            } else if (event.error === 'not-allowed') {
+                showCustomToast('Microphone permission denied.', 'error');
+                setIsMicAvailable(false);
+                setIsListening(false);
+                SpeechRecognition.stopListening();
+            } else if (event.error === 'network') {
+                // Stop trying to reconnect on network errors
+                showCustomToast('Network error occurred. Please try again.', 'error');
+                setIsListening(false);
+                SpeechRecognition.stopListening();
+            } else if (event.error === 'aborted') {
+                // Silently handle aborted errors
+                console.log('Speech recognition aborted');
+            }
+        };
+
+        // Handle end event - FIXED: Don't auto-restart to prevent loops
+        const handleEnd = () => {
+            console.log('Speech recognition ended');
+
+            // Don't restart if we're intentionally stopping
+            if (isStoppingRef.current) {
+                isStoppingRef.current = false;
+                return;
+            }
+
+            // Don't restart if there were recent errors
+            if (errorCountRef.current > 2) {
+                console.warn('Not restarting due to previous errors');
+                setIsListening(false);
+                return;
+            }
+
+            // Only restart if still in listening state
+            if (isListening) {
+                try {
+                    // Add small delay before restarting
+                    setTimeout(() => {
+                        if (isListening && recognitionRef.current && !isStoppingRef.current) {
+                            recognitionRef.current.start();
+                        }
+                    }, 100);
+                } catch (error) {
+                    console.error('Error restarting recognition:', error);
+                    setIsListening(false);
+                }
+            }
+        };
+
+        // Handle start
+        const handleStart = () => {
+            console.log('Speech recognition started');
+            errorCountRef.current = 0; // Reset error count on successful start
+        };
+
+        recognition.addEventListener('error', handleError);
+        recognition.addEventListener('end', handleEnd);
+        recognition.addEventListener('start', handleStart);
+
+        return () => {
+            if (recognition) {
+                recognition.removeEventListener('error', handleError);
+                recognition.removeEventListener('end', handleEnd);
+                recognition.removeEventListener('start', handleStart);
+            }
+        };
+    }, [isListening, browserSupportsSpeechRecognition]);
+
     // Toggle mic
     const toggleMic = useCallback(async () => {
-        if (!browserSupportsSpeechRecognition) {
-            alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+        if (!isMicAvailable) {
             return;
         }
 
-        // Check for secure context (HTTPS)
+        if (!browserSupportsSpeechRecognition) {
+            showCustomToast('Speech recognition is not supported in this browser.', 'warning');
+            setIsMicAvailable(false);
+            return;
+        }
+
         if (!window.isSecureContext) {
-            alert("Speech recognition requires HTTPS in production environments.");
+            showCustomToast('Speech recognition requires HTTPS.', 'warning');
+            setIsMicAvailable(false);
             return;
         }
 
         if (isListening) {
-            SpeechRecognition.stopListening();
-            setIsListening(false);
-            setVolume(0);
-            basePromptRef.current = "";
-            lastTranscriptLengthRef.current = 0;
+            try {
+                isStoppingRef.current = true; // Prevent auto-restart
+                SpeechRecognition.stopListening();
+                setIsListening(false);
+                setVolume(0);
+                basePromptRef.current = "";
+                lastTranscriptLengthRef.current = 0;
+                accumulatedTranscriptRef.current = "";
+                errorCountRef.current = 0; // Reset error count
+            } catch (error) {
+                console.error('Error stopping speech recognition:', error);
+                showCustomToast('Failed to stop voice input.', 'error');
+            }
         } else {
             setPrompt(current => {
                 basePromptRef.current = current;
@@ -304,24 +479,29 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             });
             resetTranscript();
             lastTranscriptLengthRef.current = 0;
+            accumulatedTranscriptRef.current = "";
+            errorCountRef.current = 0; // Reset error count
+            isStoppingRef.current = false;
             setIsListening(true);
 
             try {
                 await SpeechRecognition.startListening({
                     continuous: true,
                     language: selectedLanguage,
+                    interimResults: true,
                 });
+                hasShownErrorRef.current = false;
             } catch (error) {
                 console.error('Speech recognition error:', error);
-                alert('Failed to start speech recognition. Please check your microphone permissions.');
                 setIsListening(false);
+                setIsMicAvailable(false);
+                showCustomToast('Failed to start voice input. Please check microphone permissions.', 'error');
             }
         }
-    }, [isListening, browserSupportsSpeechRecognition, resetTranscript, setPrompt, selectedLanguage]);
+    }, [isListening, isMicAvailable, browserSupportsSpeechRecognition, resetTranscript, setPrompt, selectedLanguage]);
 
-    return { isListening, volume, toggleMic, resetTranscript };
+    return { isListening, volume, toggleMic, resetTranscript, isMicAvailable };
 };
-
 // Visualizer selector component
 const VisualizerRenderer = memo(({ type, volume, isDark }) => {
     switch (type) {
@@ -350,7 +530,8 @@ const InputField = memo(({
     isListening,
     volume,
     onToggleMic,
-    visualizerType }) => {
+    visualizerType,
+    isMicAvailable }) => {
     const textareaRef = useRef(null);
 
     const adjustHeight = useCallback(() => {
@@ -437,31 +618,33 @@ const InputField = memo(({
                 </AnimatePresence>
             </div>
 
-            <motion.button
-                onClick={onToggleMic}
-                className={micButtonClass}
-                aria-label="Toggle voice input"
-                whileTap={{ scale: 0.95 }}
-                animate={isListening ? {
-                    boxShadow: [
-                        '0 0 0 0 rgba(239, 68, 68, 0.4)',
-                        '0 0 0 10px rgba(239, 68, 68, 0)',
-                        '0 0 0 0 rgba(239, 68, 68, 0)',
-                    ],
-                } : {}}
-                transition={isListening ? {
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeOut",
-                } : {}}
-            >
-                <motion.div
-                    animate={isListening ? { rotate: [0, 10, -10, 0] } : {}}
-                    transition={isListening ? { duration: 0.5, repeat: Infinity } : {}}
+            {isMicAvailable && (
+                <motion.button
+                    onClick={onToggleMic}
+                    className={micButtonClass}
+                    aria-label="Toggle voice input"
+                    whileTap={{ scale: 0.95 }}
+                    animate={isListening ? {
+                        boxShadow: [
+                            '0 0 0 0 rgba(239, 68, 68, 0.4)',
+                            '0 0 0 10px rgba(239, 68, 68, 0)',
+                            '0 0 0 0 rgba(239, 68, 68, 0)',
+                        ],
+                    } : {}}
+                    transition={isListening ? {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeOut",
+                    } : {}}
                 >
-                    {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-                </motion.div>
-            </motion.button>
+                    <motion.div
+                        animate={isListening ? { rotate: [0, 10, -10, 0] } : {}}
+                        transition={isListening ? { duration: 0.5, repeat: Infinity } : {}}
+                    >
+                        {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                    </motion.div>
+                </motion.button>
+            )}
 
             <motion.button
                 onClick={onSend}
@@ -483,7 +666,7 @@ InputField.displayName = 'InputField';
 // LocalInput for greeting screen
 const LocalInput = memo(({ isDark, isLoading, onSendMessage, selectedLanguage, visualizerType }) => {
     const [localPrompt, setLocalPrompt] = useState("");
-    const { isListening, volume, toggleMic, resetTranscript } = useVoiceInput(setLocalPrompt, selectedLanguage);
+    const { isListening, volume, toggleMic, resetTranscript, isMicAvailable } = useVoiceInput(setLocalPrompt, selectedLanguage);
 
     const handleSend = useCallback(() => {
         if (!localPrompt.trim() || isListening) return;
@@ -515,6 +698,7 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage, selectedLanguage, v
                     volume={volume}
                     onToggleMic={toggleMic}
                     visualizerType={visualizerType}
+                    isMicAvailable={isMicAvailable}
                 />
             </div>
         </div>
@@ -572,7 +756,7 @@ LoadingIndicator.displayName = 'LoadingIndicator';
 
 // MainInput
 const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage, selectedLanguage, visualizerType }) => {
-    const { isListening, volume, toggleMic, resetTranscript } = useVoiceInput(setPrompt, selectedLanguage);
+    const { isListening, volume, toggleMic, resetTranscript, isMicAvailable } = useVoiceInput(setPrompt, selectedLanguage);
 
     const handleSend = useCallback(() => {
         if (!isLoading && prompt.trim() && !isListening) {
@@ -610,6 +794,7 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage, s
                         volume={volume}
                         onToggleMic={toggleMic}
                         visualizerType={visualizerType}
+                        isMicAvailable={isMicAvailable}
                     />
                 </motion.div>
             </div>
@@ -691,7 +876,8 @@ export const ChatWindow = () => {
                 }
             }, 40);
         } catch (error) {
-            console.error(error);
+            console.error('Error sending message:', error);
+            showCustomToast('Failed to send message. Please try again.', 'error');
             setIsLoading(false);
         }
     }, [currentThreadId, setChats, setPrompt, setIsNewChat]);
