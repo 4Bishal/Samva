@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { ThemeContext } from "../../utils/ThemeProvider";
 import { themeColors } from "../../utils/themeColor";
+import { ChatContext } from "../../context/ChatProvider";
+import { v4 as uuidv4 } from "uuid";
 
 export const HeroSection = () => {
     const navigate = useNavigate();
@@ -12,8 +14,28 @@ export const HeroSection = () => {
     const { theme } = useContext(ThemeContext);
     const colors = themeColors[theme];
 
+    const {
+        setCurrentThreadId,
+        setChats,
+        setIsNewChat,
+        setPrompt,
+        setReply
+    } = useContext(ChatContext);
+
     const handleGetStarted = () => {
-        navigate(isAuthenticated ? "/samvadPlace" : "/login");
+        if (isAuthenticated) {
+            // Create fresh new chat
+            const newThreadId = uuidv4();
+            setCurrentThreadId(newThreadId);
+            setChats([]);
+            setIsNewChat(true);
+            setPrompt("");
+            setReply(null);
+
+            navigate("/samvadPlace");
+        } else {
+            navigate("/login");
+        }
     };
 
     const getGreeting = () => {

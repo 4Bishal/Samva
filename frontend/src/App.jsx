@@ -13,7 +13,6 @@ import { RegisterPage } from "./pages/RegisterPage.jsx";
 import { HomePage } from "./pages/HomePage.jsx";
 import { NotFound } from "./pages/NotFound.jsx";
 import { useAuthStore } from "./store/authStore.jsx";
-import { showCustomToast } from "./utils/customToast.js";
 
 function App() {
   const { checkAuth, isCheckingAuth } = useAuthStore();
@@ -30,8 +29,6 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [isCheckingAuth]);
-
-
 
   const [prompt, setPrompt] = useState("");
   const [reply, setReply] = useState(null);
@@ -78,6 +75,16 @@ function App() {
               }
             />
             <Route path="/" element={<HomePage />} />
+            {/* Dynamic thread routing */}
+            <Route
+              path="/samvadPlace/:threadId"
+              element={
+                <ProtectedRoute>
+                  <SamvadPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Redirect /samvadPlace to /samvadPlace (without threadId for new chat) */}
             <Route
               path="/samvadPlace"
               element={
@@ -86,6 +93,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* 404 route */}
+            <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

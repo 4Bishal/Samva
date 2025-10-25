@@ -6,6 +6,8 @@ import { useAuthStore } from "../../store/authStore.jsx";
 import { useContext, useState, useRef, useEffect, memo, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChatContext } from "../../context/ChatProvider";
+import { v4 as uuidv4 } from "uuid";
 
 // Supported languages
 export const SUPPORTED_LANGUAGES = [
@@ -89,6 +91,14 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
     const langDropdownRef = useRef(null);
     const vizDropdownRef = useRef(null);
 
+    const {
+        setCurrentThreadId,
+        setChats,
+        setIsNewChat,
+        setPrompt,
+        setReply
+    } = useContext(ChatContext);
+
     const navigate = useNavigate();
 
     // Click outside handlers
@@ -116,6 +126,17 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
     const selectedLang = SUPPORTED_LANGUAGES.find(lang => lang.code === selectedLanguage) || SUPPORTED_LANGUAGES[2];
     const selectedViz = VISUALIZER_TYPES.find(viz => viz.id === selectedVisualizer) || VISUALIZER_TYPES[2];
 
+    const handleHomeClick = (e) => {
+        e.preventDefault();
+        const newThreadId = uuidv4();
+        setCurrentThreadId(newThreadId);
+        setChats([]);
+        setIsNewChat(true);
+        setPrompt("");
+        setReply(null);
+        navigate("/");
+    };
+
     return (
         <div
             className={`relative flex items-center justify-between p-3 sm:p-4 shadow-sm transition-colors duration-300
@@ -126,16 +147,13 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
         >
             {/* Left - Home Icon */}
             <div className="flex items-center gap-2 sm:gap-3 font-semibold text-sm sm:text-base ml-12 md:ml-0">
-                <Link
-                    to="/"
+                <button
+                    onClick={handleHomeClick}
                     className="flex items-center gap-1 transition-opacity duration-200 hover:opacity-80"
                 >
-                    <Home
-                        size={20}
-                        className={`sm:w-[22px] sm:h-[22px] ${isDark ? "text-gray-300" : "text-gray-700"}`}
-                    />
+                    <Home size={20} className={`sm:w-[22px] sm:h-[22px] ${isDark ? "text-gray-300" : "text-gray-700"}`} />
                     <span className="hidden xs:inline">Home</span>
-                </Link>
+                </button>
             </div>
 
             {/* Right - Language + Visualizer + Theme + User */}

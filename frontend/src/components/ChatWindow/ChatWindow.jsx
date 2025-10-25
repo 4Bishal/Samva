@@ -11,6 +11,7 @@ import axios from "axios";
 import { server } from "../../utils/environment.js";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { showCustomToast } from "../../utils/customToast.js";
+import { useNavigate } from 'react-router-dom';
 
 // Premium Voice Visualizer Component
 const VoiceVisualizer = memo(({ volume, isDark }) => {
@@ -193,7 +194,32 @@ const DNAHelixVisualizer = memo(({ volume, isDark }) => {
 
 DNAHelixVisualizer.displayName = 'DNAHelixVisualizer';
 
-// Hook for voice input
+// Helper function to detect mobile devices
+const isMobileDevice = () => {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+    // Check for mobile keywords
+    const mobileKeywords = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    if (mobileKeywords.test(userAgent)) return true;
+
+    // Check for touch capability and small screen
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallScreen = window.innerWidth <= 768;
+
+    return isTouchDevice && isSmallScreen;
+};
+
+// Helper function to check if browser is Chrome
+const isChromeBrowser = () => {
+    const userAgent = navigator.userAgent;
+    const isChrome = /Chrome/.test(userAgent) && /Google Inc/.test(navigator.vendor);
+    const isEdge = /Edg/.test(userAgent);
+    const isOpera = /OPR/.test(userAgent);
+
+    // Return true only for actual Chrome, not Edge or Opera
+    return isChrome && !isEdge && !isOpera;
+};
+
 // Hook for voice input
 const useVoiceInput = (setPrompt, selectedLanguage) => {
     const [isListening, setIsListening] = useState(false);
@@ -209,6 +235,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
     const isStoppingRef = useRef(false);
     const errorCountRef = useRef(0);
     const lastErrorTimeRef = useRef(0);
+    const hasShownChromeWarningRef = useRef(false);
 
     const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
@@ -217,6 +244,15 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
         let isMounted = true;
 
         const checkAvailability = async () => {
+            // Check if device is mobile
+            if (isMobileDevice()) {
+                if (isMounted) {
+                    setIsMicAvailable(false);
+                    console.warn('Voice input not available on mobile devices');
+                }
+                return;
+            }
+
             // Check browser support
             if (!browserSupportsSpeechRecognition) {
                 if (isMounted) {
@@ -355,6 +391,15 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                     setIsListening(false);
                     setIsMicAvailable(false);
                     SpeechRecognition.stopListening();
+
+                    // Show Chrome suggestion if not already shown and not using Chrome
+                    if (!hasShownChromeWarningRef.current && !isChromeBrowser()) {
+                        showCustomToast(
+                            'Voice input works best in Chrome browser on desktop. Please switch to Chrome for a better experience.',
+                            'info'
+                        );
+                        hasShownChromeWarningRef.current = true;
+                    }
                     return;
                 }
             } else {
@@ -379,12 +424,24 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 SpeechRecognition.stopListening();
             } else if (event.error === 'network') {
                 // Stop trying to reconnect on network errors
-                showCustomToast('Network error occurred. Please try again.', 'error');
                 setIsListening(false);
                 SpeechRecognition.stopListening();
+
+                // Show Chrome suggestion if not using Chrome
+                if (!isChromeBrowser() && !hasShownChromeWarningRef.current) {
+                    showCustomToast(
+                        'Voice input works best in Chrome browser on desktop. Please switch to Chrome for optimal performance.',
+                        'info'
+                    );
+                    hasShownChromeWarningRef.current = true;
+                } else {
+                    showCustomToast('Network error occurred. Please try again.', 'error');
+                }
             } else if (event.error === 'aborted') {
                 // Silently handle aborted errors
                 console.log('Speech recognition aborted');
+                setIsListening(false);
+                SpeechRecognition.stopListening();
             }
         };
 
@@ -405,13 +462,26 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 return;
             }
 
-            // Only restart if still in listening state
-            if (isListening) {
+            // Only restart if still in listening state and recognition is not already running
+            if (isListening && recognitionRef.current) {
                 try {
+                    // Check if recognition is already started before restarting
+                    const currentRecognition = recognitionRef.current;
+
                     // Add small delay before restarting
                     setTimeout(() => {
-                        if (isListening && recognitionRef.current && !isStoppingRef.current) {
-                            recognitionRef.current.start();
+                        if (isListening && !isStoppingRef.current && currentRecognition) {
+                            try {
+                                currentRecognition.start();
+                            } catch (startError) {
+                                // Handle "already started" error silently
+                                if (startError.message && startError.message.includes('already started')) {
+                                    console.log('Recognition already running, skipping restart');
+                                } else {
+                                    console.error('Error starting recognition:', startError);
+                                    setIsListening(false);
+                                }
+                            }
                         }
                     }, 100);
                 } catch (error) {
@@ -442,6 +512,15 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
     // Toggle mic
     const toggleMic = useCallback(async () => {
+        // Check if mobile device first
+        if (isMobileDevice()) {
+            showCustomToast(
+                'Voice input is currently not available on mobile devices. Please use Chrome browser on desktop or PC for the best voice experience.',
+                'info'
+            );
+            return;
+        }
+
         if (!isMicAvailable) {
             return;
         }
@@ -456,6 +535,15 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             showCustomToast('Speech recognition requires HTTPS.', 'warning');
             setIsMicAvailable(false);
             return;
+        }
+
+        // Check if not using Chrome and show warning
+        if (!isChromeBrowser() && !hasShownChromeWarningRef.current) {
+            showCustomToast(
+                'Voice input works best in Chrome browser on desktop. For optimal experience, please use Chrome.',
+                'info'
+            );
+            hasShownChromeWarningRef.current = true;
         }
 
         if (isListening) {
@@ -502,6 +590,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
     return { isListening, volume, toggleMic, resetTranscript, isMicAvailable };
 };
+
 // Visualizer selector component
 const VisualizerRenderer = memo(({ type, volume, isDark }) => {
     switch (type) {
@@ -819,12 +908,14 @@ export const ChatWindow = () => {
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
     const { user } = useAuthStore();
+    const navigate = useNavigate();
 
     const [isLoading, setIsLoading] = useState(false);
     const [typingAI, setTypingAI] = useState("");
     const [selectedLanguage, setSelectedLanguage] = useState('ne-NP');
     const [selectedVisualizer, setSelectedVisualizer] = useState('bars');
     const [isListening, setIsListening] = useState(false);
+
 
     const chatEndRef = useRef(null);
 
@@ -850,6 +941,8 @@ export const ChatWindow = () => {
     const sendMessage = useCallback(async (message) => {
         if (!message.trim()) return;
 
+        const wasNewChat = isNewChat; // ADD THIS LINE - Track if this was a new chat
+
         setChats(prev => [...prev, { role: "user", content: message }]);
         setPrompt("");
         setIsLoading(true);
@@ -860,6 +953,11 @@ export const ChatWindow = () => {
                 message,
                 threadId: currentThreadId,
             }, { withCredentials: true });
+
+            // ADD THESE 3 LINES - Update URL after first message
+            if (wasNewChat) {
+                navigate(`/samvadPlace/${currentThreadId}`, { replace: true });
+            }
 
             const words = data.reply.split(" ");
             let idx = 0;
@@ -880,7 +978,7 @@ export const ChatWindow = () => {
             showCustomToast('Failed to send message. Please try again.', 'error');
             setIsLoading(false);
         }
-    }, [currentThreadId, setChats, setPrompt, setIsNewChat]);
+    }, [currentThreadId, setChats, setPrompt, setIsNewChat, isNewChat, navigate]); // ADD isNewChat and navigate
 
     return (
         <div className={`flex flex-col h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>

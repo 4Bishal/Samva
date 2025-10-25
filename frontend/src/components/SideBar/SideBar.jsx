@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { SquarePen, Trash2, AlertTriangle } from "lucide-react";
 import LightThemeLogo from "../../assets/LightThemeLogo.png";
@@ -23,6 +24,7 @@ export const SideBar = ({ closeSidebar }) => {
 
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
+    const navigate = useNavigate();
 
     const [threadToDelete, setThreadToDelete] = useState(null);
 
@@ -51,6 +53,9 @@ export const SideBar = ({ closeSidebar }) => {
         setChats([]);
         setIsNewChat(true);
 
+        // Navigate to /samvadPlace without threadId for new chats
+        navigate('/samvadPlace');
+
         if (closeSidebar) closeSidebar();
 
         if (firstMessage) {
@@ -74,7 +79,12 @@ export const SideBar = ({ closeSidebar }) => {
 
     const changeThreadId = async (newThreadId) => {
         setCurrentThreadId(newThreadId);
+
+        // Navigate to thread URL
+        navigate(`/samvadPlace/${newThreadId}`);
+
         if (closeSidebar) closeSidebar();
+
         try {
             const response = await axios.get(`${server}/api/threads/${newThreadId}`, { withCredentials: true });
             setChats(response.data.thread.message);
@@ -100,6 +110,9 @@ export const SideBar = ({ closeSidebar }) => {
                 setIsNewChat(true);
                 setPrompt("");
                 setReply(null);
+
+                // Navigate to /samvadPlace for new chat
+                navigate('/samvadPlace');
             }
         } catch (error) {
             console.log(error);
