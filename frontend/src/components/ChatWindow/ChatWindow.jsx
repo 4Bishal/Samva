@@ -10,6 +10,7 @@ import { ScaleLoader } from "react-spinners";
 import axios from "axios";
 import { server } from "../../utils/environment.js";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import { showCustomToast } from "../../utils/customToast.js";
 
 // Premium Voice Visualizer Component
 const VoiceVisualizer = memo(({ volume, isDark }) => {
@@ -203,6 +204,21 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
     const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
+    // Check if speech recognition is available
+    useEffect(() => {
+        if (!browserSupportsSpeechRecognition) {
+            console.warn('Speech recognition is not supported in this browser');
+            showCustomToast('Speech recognition is not supported in this browser', "warning");
+        }
+
+        // Check if running on HTTPS or localhost
+        const isSecureContext = window.isSecureContext;
+        if (!isSecureContext) {
+            console.error('Speech recognition requires HTTPS in production');
+            showCustomToast('Speech recognition requires HTTPS in production', "error");
+        }
+    }, [browserSupportsSpeechRecognition]);
+
     // Audio volume analysis
     useEffect(() => {
         if (!isListening) return;
@@ -238,7 +254,11 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                     cancelAnimationFrame(rafIdRef.current);
                 };
             })
-            .catch(console.error);
+            .catch(error => {
+                console.error('Microphone access error:', error);
+                alert('Unable to access microphone. Please check permissions.');
+                setIsListening(false);
+            });
 
         return cleanup;
     }, [isListening]);
@@ -261,7 +281,13 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
     // Toggle mic
     const toggleMic = useCallback(async () => {
         if (!browserSupportsSpeechRecognition) {
-            alert("Speech recognition not supported in this browser");
+            alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+            return;
+        }
+
+        // Check for secure context (HTTPS)
+        if (!window.isSecureContext) {
+            alert("Speech recognition requires HTTPS in production environments.");
             return;
         }
 
@@ -280,10 +306,16 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             lastTranscriptLengthRef.current = 0;
             setIsListening(true);
 
-            await SpeechRecognition.startListening({
-                continuous: true,
-                language: selectedLanguage,
-            });
+            try {
+                await SpeechRecognition.startListening({
+                    continuous: true,
+                    language: selectedLanguage,
+                });
+            } catch (error) {
+                console.error('Speech recognition error:', error);
+                alert('Failed to start speech recognition. Please check your microphone permissions.');
+                setIsListening(false);
+            }
         }
     }, [isListening, browserSupportsSpeechRecognition, resetTranscript, setPrompt, selectedLanguage]);
 
@@ -333,10 +365,27 @@ const InputField = memo(({
         adjustHeight();
     }, [value, adjustHeight]);
 
+    // Block keyboard input when listening
+    const handleKeyDown = useCallback((e) => {
+        if (isListening) {
+            e.preventDefault();
+            return;
+        }
+        onKeyDown(e);
+    }, [isListening, onKeyDown]);
+
+    const handleChange = useCallback((e) => {
+        if (isListening) {
+            e.preventDefault();
+            return;
+        }
+        onChange(e);
+    }, [isListening, onChange]);
+
     const baseInputClass = `w-full px-3.5 py-2.5 text-sm border-2 rounded-2xl focus:outline-none focus:ring-2 resize-none overflow-hidden max-h-[120px] transition-all duration-200 ${isDark
         ? "bg-gray-800 border-gray-700 text-gray-100 focus:ring-purple-500 focus:border-purple-500 placeholder:text-gray-500"
         : "bg-white border-gray-300 text-gray-900 focus:ring-purple-500 focus:border-purple-400 placeholder:text-gray-400"
-        }`;
+        } ${isListening ? 'cursor-not-allowed' : ''}`;
 
     const isSendDisabled = isLoading || !value.trim() || isListening;
 
@@ -362,12 +411,13 @@ const InputField = memo(({
                 <motion.textarea
                     ref={textareaRef}
                     rows="1"
-                    placeholder={placeholder}
+                    placeholder={isListening ? "Listening..." : placeholder}
                     value={value}
-                    onChange={onChange}
-                    onKeyDown={onKeyDown}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
                     className={baseInputClass}
                     style={{ minHeight: '44px' }}
+                    disabled={isListening}
                     animate={isListening ? {
                         borderColor: isDark
                             ? ['#6b7280', '#a855f7', '#6b7280']
@@ -587,8 +637,8 @@ export const ChatWindow = () => {
 
     const [isLoading, setIsLoading] = useState(false);
     const [typingAI, setTypingAI] = useState("");
-    const [selectedLanguage, setSelectedLanguage] = useState('en-IN');
-    const [selectedVisualizer, setSelectedVisualizer] = useState('circular');
+    const [selectedLanguage, setSelectedLanguage] = useState('ne-NP');
+    const [selectedVisualizer, setSelectedVisualizer] = useState('bars');
     const [isListening, setIsListening] = useState(false);
 
     const chatEndRef = useRef(null);
@@ -668,7 +718,7 @@ export const ChatWindow = () => {
                 />
             ) : (
                 <>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto scrollbar-thin">
                         <Chat extraTypingAI={typingAI} />
                         <div ref={chatEndRef} />
                         {isLoading && !typingAI && <LoadingIndicator isDark={isDark} />}

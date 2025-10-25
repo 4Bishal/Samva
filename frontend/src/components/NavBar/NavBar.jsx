@@ -171,7 +171,7 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                 transition={{ duration: 0.15 }}
-                                className={`absolute top-full mt-2 right-0 w-64 max-h-80 overflow-y-auto rounded-xl shadow-2xl border ${isDark
+                                className={`absolute top-full mt-2 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 w-64 max-w-[calc(100vw-2rem)] max-h-80 overflow-y-auto rounded-xl shadow-2xl border ${isDark
                                     ? 'bg-gray-800 border-gray-700'
                                     : 'bg-white border-gray-200'
                                     } z-50`}
