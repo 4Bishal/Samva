@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from 'react';
+import { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ThemeContext } from '../utils/ThemeProvider';
@@ -12,58 +12,29 @@ const GoogleSignIn = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Check if script already exists
-        if (document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-            initializeGoogleButton();
-            return;
-        }
-
         // Load Google Sign-In script
-        const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.async = true;
-        script.defer = true;
-        document.body.appendChild(script);
+        if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
 
-        script.onload = () => {
-            initializeGoogleButton();
-        };
+            script.onload = () => {
+                initializeGoogle();
+            };
+        } else {
+            initializeGoogle();
+        }
+    }, []);
 
-        return () => {
-            // Cleanup is handled by Google's library
-        };
-    }, [theme]); // Re-initialize when theme changes
-
-    const initializeGoogleButton = () => {
+    const initializeGoogle = () => {
         if (window.google) {
             window.google.accounts.id.initialize({
                 client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 callback: handleCredentialResponse,
                 locale: 'en',
-                auto_select: false, // Disable auto-select
-                cancel_on_tap_outside: true,
             });
-
-            const buttonContainer = document.getElementById('googleSignInButton');
-            if (buttonContainer) {
-                // Clear previous button
-                buttonContainer.innerHTML = '';
-
-                // Render custom styled button
-                window.google.accounts.id.renderButton(
-                    buttonContainer,
-                    {
-                        theme: 'outline',
-                        size: 'large',
-                        text: 'signin_with', // Generic text
-                        shape: 'rectangular',
-                        width: 400,
-                        logo_alignment: 'left',
-                        locale: 'en',
-                        type: 'standard', // Standard type (not personalized)
-                    }
-                );
-            }
         }
     };
 
@@ -75,6 +46,41 @@ const GoogleSignIn = () => {
             console.error('Google sign-in error:', error);
         }
     };
+
+    const handleGoogleSignIn = () => {
+        if (window.google) {
+            // Use the popup method which shows generic button
+            window.google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    // If prompt doesn't show, render a temporary button and click it
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.display = 'none';
+                    document.body.appendChild(tempDiv);
+
+                    window.google.accounts.id.renderButton(tempDiv, {
+                        theme: 'outline',
+                        size: 'large',
+                    });
+
+                    // Click the button programmatically
+                    setTimeout(() => {
+                        const btn = tempDiv.querySelector('div[role="button"]');
+                        if (btn) btn.click();
+                        document.body.removeChild(tempDiv);
+                    }, 100);
+                }
+            });
+        }
+    };
+
+    const GoogleIcon = () => (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4" />
+            <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853" />
+            <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49l3.34-2.59z" fill="#FBBC05" />
+            <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.695 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.19 5.736 7.395 3.977 10 3.977z" fill="#EA4335" />
+        </svg>
+    );
 
     return (
         <div>
@@ -89,90 +95,28 @@ const GoogleSignIn = () => {
                     }`}></div>
             </div>
 
-            {/* Google Button Container with custom styling */}
-            <div className="relative w-full flex justify-center items-center">
-                {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-xl z-10 backdrop-blur-sm">
-                        <Loader className="animate-spin text-blue-500" size={28} />
-                    </div>
+            {/* Custom Google Sign-In Button - Always shows generic "Sign in with Google" */}
+            <button
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+                className={`relative w-full py-3.5 rounded-xl font-semibold shadow-lg transition-all duration-300 flex items-center justify-center gap-3 group hover:scale-[1.02] active:scale-[0.98] ${theme === 'dark'
+                    ? 'bg-gray-800 hover:bg-gray-700 text-white border-2 border-gray-700 hover:border-gray-600 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                    : 'bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300 hover:border-gray-400 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                    }`}
+            >
+                {isLoading ? (
+                    <Loader className="animate-spin" size={22} />
+                ) : (
+                    <>
+                        <div className="transition-transform duration-300 group-hover:scale-110">
+                            <GoogleIcon />
+                        </div>
+                        <span className="transition-all duration-300">
+                            Sign in with Google
+                        </span>
+                    </>
                 )}
-                <div
-                    id="googleSignInButton"
-                    className={`transition-opacity duration-300 w-full ${isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'
-                        }`}
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                    }}
-                ></div>
-            </div>
-
-            {/* Custom styling to make Google button look like login button */}
-            <style>{`
-                /* Container styling */
-                #googleSignInButton > div {
-                    margin: 0 auto !important;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                }
-                
-                #googleSignInButton iframe {
-                    margin: 0 auto !important;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                }
-
-                /* Custom button styling to match login button */
-                #googleSignInButton > div > div {
-                    border-radius: 0.75rem !important; /* rounded-xl */
-                    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important; /* shadow-lg */
-                    transition: all 0.3s ease !important;
-                    border: 2px solid ${theme === 'dark' ? '#374151' : '#d1d5db'} !important; /* border-2 */
-                    background-color: ${theme === 'dark' ? '#1f2937' : '#ffffff'} !important;
-                    overflow: hidden !important;
-                }
-
-                /* Hover effect - scale up */
-                #googleSignInButton > div > div:hover {
-                    transform: scale(1.02) !important;
-                    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important; /* shadow-xl */
-                    border-color: ${theme === 'dark' ? '#4b5563' : '#9ca3af'} !important;
-                    background-color: ${theme === 'dark' ? '#374151' : '#f9fafb'} !important;
-                }
-
-                /* Active effect - scale down */
-                #googleSignInButton > div > div:active {
-                    transform: scale(0.98) !important;
-                }
-
-                /* Make iframe fill container properly */
-                #googleSignInButton iframe {
-                    border-radius: 0.75rem !important;
-                }
-
-                /* Dark theme adjustments */
-                ${theme === 'dark' ? `
-                    #googleSignInButton > div > div {
-                        filter: brightness(0.95);
-                    }
-                    #googleSignInButton > div > div:hover {
-                        filter: brightness(1.05);
-                    }
-                ` : ''}
-
-                /* Smooth transitions */
-                #googleSignInButton * {
-                    transition: all 0.3s ease !important;
-                }
-
-                /* Mobile responsive */
-                @media (max-width: 640px) {
-                    #googleSignInButton > div,
-                    #googleSignInButton iframe {
-                        max-width: 100% !important;
-                    }
-                }
-            `}</style>
+            </button>
         </div>
     );
 };
