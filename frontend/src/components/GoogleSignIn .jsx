@@ -39,12 +39,16 @@ const GoogleSignIn = () => {
             window.google.accounts.id.initialize({
                 client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 callback: handleCredentialResponse,
+                locale: 'en', // Force English language
             });
 
             const buttonContainer = document.getElementById('googleSignInButton');
             if (buttonContainer) {
                 // Clear previous button
                 buttonContainer.innerHTML = '';
+
+                // Detect screen size
+                const isMobile = window.innerWidth < 640;
 
                 // Render with theme-appropriate styling
                 window.google.accounts.id.renderButton(
@@ -54,8 +58,9 @@ const GoogleSignIn = () => {
                         size: 'large',
                         text: 'signin_with',
                         shape: 'pill',
-                        width: 360, // Fixed width for consistency
+                        width: isMobile ? window.innerWidth - 80 : 360, // Responsive width
                         logo_alignment: 'left',
+                        locale: 'en', // Force English language
                     }
                 );
             }
@@ -93,11 +98,9 @@ const GoogleSignIn = () => {
                 )}
                 <div
                     id="googleSignInButton"
-                    className={`transition-opacity duration-300 ${isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'
+                    className={`transition-opacity duration-300 w-full ${isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'
                         }`}
                     style={{
-                        width: '100%',
-                        maxWidth: '360px',
                         display: 'flex',
                         justifyContent: 'center',
                     }}
@@ -108,10 +111,22 @@ const GoogleSignIn = () => {
             <style>{`
                 #googleSignInButton > div {
                     margin: 0 auto !important;
+                    width: 100% !important;
+                    max-width: min(360px, 100%) !important;
                 }
                 
                 #googleSignInButton iframe {
                     margin: 0 auto !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                }
+
+                /* Mobile responsive */
+                @media (max-width: 640px) {
+                    #googleSignInButton > div,
+                    #googleSignInButton iframe {
+                        max-width: 100% !important;
+                    }
                 }
 
                 /* Dark theme adjustments */
