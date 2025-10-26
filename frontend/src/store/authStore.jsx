@@ -106,7 +106,8 @@ export const useAuthStore = create((set) => ({
         set({ isLoading: true, error: null });
 
         try {
-            await axios.post(`${baseUrl}/logout`);
+            await axios.post(`${baseUrl}/logout`, {}, { withCredentials: true });
+
             set({
                 user: null,
                 isAuthenticated: false,
@@ -118,11 +119,11 @@ export const useAuthStore = create((set) => ({
         } catch (err) {
             const errorMessage = err.response?.data?.message || "Error while logout";
             set({ error: errorMessage, isLoading: false });
-
             showCustomToast(errorMessage, "error");
             throw err;
         }
     },
+
 
     checkAuth: async () => {
         set({ isCheckingAuth: true });

@@ -182,15 +182,20 @@ export const handleGoogleAuth = async (req, res) => {
 
 export const handleLogout = async (req, res) => {
     try {
-        res.clearCookie("token");
-        res.status(status.OK).json({
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        });
+
+        return res.status(status.OK).json({
             success: true,
-            message: "Logout Successfully!"
+            message: "Logged out successfully!",
         });
     } catch (error) {
-        res.status(status.INTERNAL_SERVER_ERROR).json({
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
             success: false,
-            message: error.message
+            message: error.message,
         });
     }
 };
