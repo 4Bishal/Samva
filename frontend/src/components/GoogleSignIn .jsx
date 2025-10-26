@@ -1,4 +1,5 @@
 import { useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ThemeContext } from '../utils/ThemeProvider';
 import { themeColors } from '../utils/themeColor';
@@ -8,6 +9,7 @@ const GoogleSignIn = () => {
     const { googleLogin, isLoading } = useAuthStore();
     const { theme } = useContext(ThemeContext);
     const colors = themeColors[theme];
+    const navigate = useNavigate();
 
     useEffect(() => {
         // Check if script already exists
@@ -28,14 +30,7 @@ const GoogleSignIn = () => {
         };
 
         return () => {
-            // Only remove if this is the last instance
-            const buttons = document.querySelectorAll('[id^="googleSignInButton"]');
-            if (buttons.length <= 1) {
-                const scriptTag = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-                if (scriptTag) {
-                    document.body.removeChild(scriptTag);
-                }
-            }
+            // Cleanup is handled by Google's library
         };
     }, [theme]); // Re-initialize when theme changes
 
@@ -46,24 +41,31 @@ const GoogleSignIn = () => {
                 callback: handleCredentialResponse,
             });
 
-            // Render with theme-appropriate styling
-            window.google.accounts.id.renderButton(
-                document.getElementById('googleSignInButton'),
-                {
-                    theme: theme === 'dark' ? 'filled_black' : 'outline',
-                    size: 'large',
-                    text: 'signin_with',
-                    shape: 'rectangular',
-                    width: '100%',
-                    logo_alignment: 'left',
-                }
-            );
+            const buttonContainer = document.getElementById('googleSignInButton');
+            if (buttonContainer) {
+                // Clear previous button
+                buttonContainer.innerHTML = '';
+
+                // Render with theme-appropriate styling
+                window.google.accounts.id.renderButton(
+                    buttonContainer,
+                    {
+                        theme: theme === 'dark' ? 'filled_black' : 'outline',
+                        size: 'large',
+                        text: 'signin_with',
+                        shape: 'pill',
+                        width: 360, // Fixed width for consistency
+                        logo_alignment: 'left',
+                    }
+                );
+            }
         }
     };
 
     const handleCredentialResponse = async (response) => {
         try {
             await googleLogin(response.credential);
+            navigate("/", { replace: true });
         } catch (error) {
             console.error('Google sign-in error:', error);
         }
@@ -72,10 +74,10 @@ const GoogleSignIn = () => {
     return (
         <div className="mt-6">
             {/* Divider */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-6">
                 <div className={`flex-1 h-px transition-colors duration-500 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'
                     }`}></div>
-                <span className={`text-sm transition-colors duration-500 ${colors.subText}`}>
+                <span className={`text-sm font-medium transition-colors duration-500 ${colors.subText}`}>
                     OR
                 </span>
                 <div className={`flex-1 h-px transition-colors duration-500 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'
@@ -83,18 +85,45 @@ const GoogleSignIn = () => {
             </div>
 
             {/* Google Button Container */}
-            <div className="relative w-full flex justify-center">
+            <div className="relative w-full flex justify-center items-center">
                 {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-opacity-50 z-10">
-                        <Loader className={`animate-spin ${colors.primary}`} size={24} />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-xl z-10 backdrop-blur-sm">
+                        <Loader className="animate-spin text-blue-500" size={28} />
                     </div>
                 )}
                 <div
                     id="googleSignInButton"
-                    className={`w-full ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-                    style={{ maxWidth: '100%' }}
+                    className={`transition-opacity duration-300 ${isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'
+                        }`}
+                    style={{
+                        width: '100%',
+                        maxWidth: '360px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                    }}
                 ></div>
             </div>
+
+            {/* Styling adjustments for Google button */}
+            <style>{`
+                #googleSignInButton > div {
+                    margin: 0 auto !important;
+                }
+                
+                #googleSignInButton iframe {
+                    margin: 0 auto !important;
+                }
+
+                /* Dark theme adjustments */
+                ${theme === 'dark' ? `
+                    #googleSignInButton {
+                        filter: brightness(0.95);
+                    }
+                    #googleSignInButton:hover {
+                        filter: brightness(1.05);
+                    }
+                ` : ''}
+            `}</style>
         </div>
     );
 };
