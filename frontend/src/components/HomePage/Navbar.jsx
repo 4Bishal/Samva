@@ -144,7 +144,7 @@ export const NavBar = () => {
                 ) : (
                     <button
                         onClick={handleLogout}
-                        className={`flex items-center gap-2 ${btnText} ${btnBorder} px-4 py-2 rounded-full font-semibold ${hoverBg}`}
+                        className={`flex items-center gap-2 ${btnText} ${btnBorder} px-4 py-2 rounded-full  cursor-pointer font-semibold ${hoverBg}`}
                     >
                         <LogOut size={18} /> Logout
                     </button>

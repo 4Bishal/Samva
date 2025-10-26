@@ -12,6 +12,7 @@ import GoogleSignIn from "../components/GoogleSignIn ";
 export const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [localLoading, setLocalLoading] = useState(false);
 
     const { login, isLoading } = useAuthStore();
     const navigate = useNavigate();
@@ -19,15 +20,32 @@ export const LoginPage = () => {
     const { theme } = useContext(ThemeContext);
     const colors = themeColors[theme];
 
+    // Combined loading state
+    const isProcessing = isLoading || localLoading;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Prevent multiple submissions
+        if (isProcessing) return;
+
+        // Validate inputs
+        if (!email.trim() || !password.trim()) {
+            return;
+        }
+
+        setLocalLoading(true);
         try {
             await login(email, password);
+            // Only navigate and clear on success
             navigate("/", { replace: true });
             setEmail("");
             setPassword("");
-        } catch {
+        } catch (error) {
             // Error is already shown via custom toast in authStore
+            console.error('Login error:', error);
+        } finally {
+            setLocalLoading(false);
         }
     };
 
@@ -57,7 +75,8 @@ export const LoginPage = () => {
                         {/* Email Input - FIXED: Better padding and alignment */}
                         <motion.div className="relative">
                             <Mail
-                                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-500 ${colors.subText}`}
+                                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isProcessing ? 'text-gray-400' : colors.subText
+                                    }`}
                                 size={20}
                             />
                             <input
@@ -66,9 +85,10 @@ export const LoginPage = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                disabled={isProcessing}
                                 className={`pl-12 pr-4 py-3.5 w-full rounded-xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 ${theme === "dark"
-                                    ? "border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
-                                    : "border-gray-300 bg-white text-gray-800 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-400"
+                                        ? "border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        : "border-gray-300 bg-white text-gray-800 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                     }`}
                             />
                         </motion.div>
@@ -76,7 +96,8 @@ export const LoginPage = () => {
                         {/* Password Input - FIXED: Better padding and alignment */}
                         <motion.div className="relative">
                             <Lock
-                                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-500 ${colors.subText}`}
+                                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-500 ${isProcessing ? 'text-gray-400' : colors.subText
+                                    }`}
                                 size={20}
                             />
                             <input
@@ -85,26 +106,35 @@ export const LoginPage = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
+                                disabled={isProcessing}
                                 className={`pl-12 pr-4 py-3.5 w-full rounded-xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 ${theme === "dark"
-                                    ? "border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
-                                    : "border-gray-300 bg-white text-gray-800 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-400"
+                                        ? "border-gray-700 bg-gray-800 text-gray-100 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        : "border-gray-300 bg-white text-gray-800 placeholder-gray-500 focus:ring-blue-500 focus:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                     }`}
                             />
                         </motion.div>
 
                         {/* Submit Button - FIXED: Better spacing and size */}
                         <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={!isProcessing ? { scale: 1.02 } : {}}
+                            whileTap={!isProcessing ? { scale: 0.98 } : {}}
                             type="submit"
-                            disabled={isLoading}
-                            className={`w-full py-3.5 rounded-xl font-semibold shadow-lg cursor-pointer transition-all duration-300 mt-1 ${theme === "dark"
-                                ? "bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                : "bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isProcessing}
+                            className={`w-full py-3.5 rounded-xl font-semibold shadow-lg transition-all duration-300 mt-1 flex items-center justify-center gap-2 ${theme === "dark"
+                                    ? "bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    : "bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                } ${!isProcessing
+                                    ? 'hover:bg-blue-700 cursor-pointer'
+                                    : 'cursor-not-allowed'
                                 }`}
                         >
-                            {isLoading ? (
-                                <Loader className="animate-spin mx-auto" size={22} />
+                            {isProcessing ? (
+                                <>
+                                    <Loader className="animate-spin" size={22} />
+                                    <span className="text-sm">
+                                        {localLoading ? 'Logging in...' : 'Please wait...'}
+                                    </span>
+                                </>
                             ) : (
                                 "Log In"
                             )}
@@ -123,7 +153,13 @@ export const LoginPage = () => {
                         Don't have an account?{" "}
                         <Link
                             to="/register"
-                            className={`${colors.primary} hover:underline font-semibold transition-colors duration-300`}
+                            className={`${colors.primary} hover:underline font-semibold transition-colors duration-300 ${isProcessing ? 'pointer-events-none opacity-50' : ''
+                                }`}
+                            onClick={(e) => {
+                                if (isProcessing) {
+                                    e.preventDefault();
+                                }
+                            }}
                         >
                             Register
                         </Link>

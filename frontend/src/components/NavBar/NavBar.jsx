@@ -279,7 +279,7 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                 </div>
 
                 {/* Visualizer Selector - Animation Style */}
-                <div className="relative" ref={vizDropdownRef}>
+                <div className="relative hidden md:block" ref={vizDropdownRef}>
                     <motion.button
                         onClick={() => !isListening && setVizDropdownOpen(!vizDropdownOpen)}
                         disabled={isListening}
