@@ -12,7 +12,7 @@ It uses a **Generative AI API** to provide intelligent, text-based responses —
 ## 🚀 Features
 
 - 💬 **Text-based conversation** with Generative AI (current).
-- 🔊 Future plans: **Voice support** for natural conversations.
+- 🎙️ Voice input feature for speech-to-text interaction.
 - 🖼️ Future plans: **Image and document sharing** for richer interactions.
 - 🌐 Built with the **MERN Stack** (MongoDB, Express, React, Node.js).
 
@@ -37,7 +37,7 @@ It’s a **Nepali-inspired digital companion**, designed to make conversations w
 ## 📌 Roadmap
 
 - [x] Text-based conversation
-- [ ] Voice conversation support
+- [x] Speech To Text support
 - [ ] Photo & document understanding
 - [x] Improved multi-turn conversation memory
 
