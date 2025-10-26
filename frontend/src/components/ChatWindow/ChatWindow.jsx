@@ -224,7 +224,6 @@ const isChromeBrowser = () => {
 const useVoiceInput = (setPrompt, selectedLanguage) => {
     const [isListening, setIsListening] = useState(false);
     const [volume, setVolume] = useState(0);
-    const [isMicAvailable, setIsMicAvailable] = useState(true);
     const basePromptRef = useRef("");
     const lastTranscriptLengthRef = useRef(0);
     const audioContextRef = useRef(null);
@@ -236,68 +235,9 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
     const errorCountRef = useRef(0);
     const lastErrorTimeRef = useRef(0);
     const hasShownChromeWarningRef = useRef(false);
+    const hasShownMobileMessageRef = useRef(false);
 
     const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
-
-    // Check if speech recognition and mic are available
-    useEffect(() => {
-        let isMounted = true;
-
-        const checkAvailability = async () => {
-            // Check if device is mobile
-            if (isMobileDevice()) {
-                if (isMounted) {
-                    setIsMicAvailable(false);
-
-                }
-                return;
-            }
-
-            // Check browser support
-            if (!browserSupportsSpeechRecognition) {
-                if (isMounted) {
-                    setIsMicAvailable(false);
-
-                }
-                return;
-            }
-
-            // Check secure context
-            if (!window.isSecureContext) {
-                if (isMounted) {
-                    setIsMicAvailable(false);
-
-                }
-                return;
-            }
-
-            // Check microphone availability
-            try {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(track => track.stop());
-                    if (isMounted) {
-                        setIsMicAvailable(true);
-                    }
-                } else {
-                    if (isMounted) {
-                        setIsMicAvailable(false);
-                    }
-                }
-            } catch (error) {
-                if (isMounted) {
-                    setIsMicAvailable(false);
-
-                }
-            }
-        };
-
-        checkAvailability();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [browserSupportsSpeechRecognition]);
 
     // Audio volume analysis
     useEffect(() => {
@@ -335,9 +275,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 };
             })
             .catch(error => {
-
                 setIsListening(false);
-                setIsMicAvailable(false);
 
                 if (!hasShownErrorRef.current) {
                     showCustomToast('Unable to access microphone. Please check permissions.', 'error');
@@ -348,7 +286,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
         return cleanup;
     }, [isListening]);
 
-    // Update prompt with transcript - Simple approach for all browsers
+    // Update prompt with transcript
     useEffect(() => {
         if (!isListening) return;
 
@@ -365,7 +303,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
         }
     }, [transcript, isListening, setPrompt]);
 
-    // Handle speech recognition events - FIXED INFINITE ERROR LOOP
+    // Handle speech recognition events
     useEffect(() => {
         if (!isListening || !browserSupportsSpeechRecognition) return;
 
@@ -376,8 +314,6 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
         // Handle errors with throttling
         const handleError = (event) => {
-
-
             const now = Date.now();
             const timeSinceLastError = now - lastErrorTimeRef.current;
 
@@ -387,9 +323,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
                 // If too many errors in short time, stop listening
                 if (errorCountRef.current > 3) {
-
                     setIsListening(false);
-                    setIsMicAvailable(false);
                     SpeechRecognition.stopListening();
 
                     // Show Chrome suggestion if not already shown and not using Chrome
@@ -411,19 +345,15 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             // Handle specific errors
             if (event.error === 'no-speech') {
                 // Don't show error for no-speech, it's normal
-
             } else if (event.error === 'audio-capture') {
                 showCustomToast('Microphone error. Please check your microphone.', 'error');
-                setIsMicAvailable(false);
                 setIsListening(false);
                 SpeechRecognition.stopListening();
             } else if (event.error === 'not-allowed') {
                 showCustomToast('Microphone permission denied.', 'error');
-                setIsMicAvailable(false);
                 setIsListening(false);
                 SpeechRecognition.stopListening();
             } else if (event.error === 'network') {
-                // Stop trying to reconnect on network errors
                 setIsListening(false);
                 SpeechRecognition.stopListening();
 
@@ -438,17 +368,13 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                     showCustomToast("For the best experience, please use Chrome on a desktop device — your current browser may not fully support this feature.", "warning");
                 }
             } else if (event.error === 'aborted') {
-                // Silently handle aborted errors
-
                 setIsListening(false);
                 SpeechRecognition.stopListening();
             }
         };
 
-        // Handle end event - FIXED: Don't auto-restart to prevent loops
+        // Handle end event
         const handleEnd = () => {
-
-
             // Don't restart if we're intentionally stopping
             if (isStoppingRef.current) {
                 isStoppingRef.current = false;
@@ -457,35 +383,29 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
             // Don't restart if there were recent errors
             if (errorCountRef.current > 2) {
-
                 setIsListening(false);
                 return;
             }
 
-            // Only restart if still in listening state and recognition is not already running
+            // Only restart if still in listening state
             if (isListening && recognitionRef.current) {
                 try {
-                    // Check if recognition is already started before restarting
                     const currentRecognition = recognitionRef.current;
 
-                    // Add small delay before restarting
                     setTimeout(() => {
                         if (isListening && !isStoppingRef.current && currentRecognition) {
                             try {
                                 currentRecognition.start();
                             } catch (startError) {
-                                // Handle "already started" error silently
                                 if (startError.message && startError.message.includes('already started')) {
-
+                                    // Silently handle
                                 } else {
-
                                     setIsListening(false);
                                 }
                             }
                         }
                     }, 100);
                 } catch (error) {
-
                     setIsListening(false);
                 }
             }
@@ -493,8 +413,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
         // Handle start
         const handleStart = () => {
-
-            errorCountRef.current = 0; // Reset error count on successful start
+            errorCountRef.current = 0;
         };
 
         recognition.addEventListener('error', handleError);
@@ -512,28 +431,31 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
     // Toggle mic
     const toggleMic = useCallback(async () => {
-        // Check if mobile device first
+        // Check if mobile device and show polite message
         if (isMobileDevice()) {
-            showCustomToast(
-                'Voice input is currently not available on mobile devices. Please use Chrome browser on desktop or PC for the best voice experience.',
-                'info'
-            );
-            return;
-        }
-
-        if (!isMicAvailable) {
+            if (!hasShownMobileMessageRef.current) {
+                showCustomToast(
+                    'We truly appreciate your interest in using voice input! For the best experience with this feature, we kindly recommend using Chrome browser on a desktop or laptop. Thank you for your understanding! 🙏',
+                    'info'
+                );
+                hasShownMobileMessageRef.current = true;
+            } else {
+                // Show shorter message on subsequent clicks
+                showCustomToast(
+                    'Please use Chrome on desktop for voice input. Thank you! 🙏',
+                    'info'
+                );
+            }
             return;
         }
 
         if (!browserSupportsSpeechRecognition) {
-            showCustomToast('Speech recognition is not supported in this browser.', 'warning');
-            setIsMicAvailable(false);
+            showCustomToast('Speech recognition is not supported in this browser. Please use Chrome on desktop for this feature.', 'warning');
             return;
         }
 
         if (!window.isSecureContext) {
             showCustomToast('Speech recognition requires HTTPS.', 'warning');
-            setIsMicAvailable(false);
             return;
         }
 
@@ -548,16 +470,15 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
         if (isListening) {
             try {
-                isStoppingRef.current = true; // Prevent auto-restart
+                isStoppingRef.current = true;
                 SpeechRecognition.stopListening();
                 setIsListening(false);
                 setVolume(0);
                 basePromptRef.current = "";
                 lastTranscriptLengthRef.current = 0;
                 accumulatedTranscriptRef.current = "";
-                errorCountRef.current = 0; // Reset error count
+                errorCountRef.current = 0;
             } catch (error) {
-
                 showCustomToast('Failed to stop voice input.', 'error');
             }
         } else {
@@ -568,7 +489,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             resetTranscript();
             lastTranscriptLengthRef.current = 0;
             accumulatedTranscriptRef.current = "";
-            errorCountRef.current = 0; // Reset error count
+            errorCountRef.current = 0;
             isStoppingRef.current = false;
             setIsListening(true);
 
@@ -580,15 +501,13 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 });
                 hasShownErrorRef.current = false;
             } catch (error) {
-
                 setIsListening(false);
-                setIsMicAvailable(false);
                 showCustomToast('Failed to start voice input. Please check microphone permissions.', 'error');
             }
         }
-    }, [isListening, isMicAvailable, browserSupportsSpeechRecognition, resetTranscript, setPrompt, selectedLanguage]);
+    }, [isListening, browserSupportsSpeechRecognition, resetTranscript, setPrompt, selectedLanguage]);
 
-    return { isListening, volume, toggleMic, resetTranscript, isMicAvailable };
+    return { isListening, volume, toggleMic, resetTranscript };
 };
 
 // Visualizer selector component
@@ -619,8 +538,7 @@ const InputField = memo(({
     isListening,
     volume,
     onToggleMic,
-    visualizerType,
-    isMicAvailable }) => {
+    visualizerType }) => {
     const textareaRef = useRef(null);
 
     const adjustHeight = useCallback(() => {
@@ -707,33 +625,31 @@ const InputField = memo(({
                 </AnimatePresence>
             </div>
 
-            {isMicAvailable && (
-                <motion.button
-                    onClick={onToggleMic}
-                    className={micButtonClass}
-                    aria-label="Toggle voice input"
-                    whileTap={{ scale: 0.95 }}
-                    animate={isListening ? {
-                        boxShadow: [
-                            '0 0 0 0 rgba(239, 68, 68, 0.4)',
-                            '0 0 0 10px rgba(239, 68, 68, 0)',
-                            '0 0 0 0 rgba(239, 68, 68, 0)',
-                        ],
-                    } : {}}
-                    transition={isListening ? {
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                    } : {}}
+            <motion.button
+                onClick={onToggleMic}
+                className={micButtonClass}
+                aria-label="Toggle voice input"
+                whileTap={{ scale: 0.95 }}
+                animate={isListening ? {
+                    boxShadow: [
+                        '0 0 0 0 rgba(239, 68, 68, 0.4)',
+                        '0 0 0 10px rgba(239, 68, 68, 0)',
+                        '0 0 0 0 rgba(239, 68, 68, 0)',
+                    ],
+                } : {}}
+                transition={isListening ? {
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                } : {}}
+            >
+                <motion.div
+                    animate={isListening ? { rotate: [0, 10, -10, 0] } : {}}
+                    transition={isListening ? { duration: 0.5, repeat: Infinity } : {}}
                 >
-                    <motion.div
-                        animate={isListening ? { rotate: [0, 10, -10, 0] } : {}}
-                        transition={isListening ? { duration: 0.5, repeat: Infinity } : {}}
-                    >
-                        {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-                    </motion.div>
-                </motion.button>
-            )}
+                    {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </motion.div>
+            </motion.button>
 
             <motion.button
                 onClick={onSend}
@@ -755,7 +671,7 @@ InputField.displayName = 'InputField';
 // LocalInput for greeting screen
 const LocalInput = memo(({ isDark, isLoading, onSendMessage, selectedLanguage, visualizerType }) => {
     const [localPrompt, setLocalPrompt] = useState("");
-    const { isListening, volume, toggleMic, resetTranscript, isMicAvailable } = useVoiceInput(setLocalPrompt, selectedLanguage);
+    const { isListening, volume, toggleMic, resetTranscript } = useVoiceInput(setLocalPrompt, selectedLanguage);
 
     const handleSend = useCallback(() => {
         if (!localPrompt.trim() || isListening) return;
@@ -787,7 +703,6 @@ const LocalInput = memo(({ isDark, isLoading, onSendMessage, selectedLanguage, v
                     volume={volume}
                     onToggleMic={toggleMic}
                     visualizerType={visualizerType}
-                    isMicAvailable={isMicAvailable}
                 />
             </div>
         </div>
@@ -845,7 +760,7 @@ LoadingIndicator.displayName = 'LoadingIndicator';
 
 // MainInput
 const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage, selectedLanguage, visualizerType }) => {
-    const { isListening, volume, toggleMic, resetTranscript, isMicAvailable } = useVoiceInput(setPrompt, selectedLanguage);
+    const { isListening, volume, toggleMic, resetTranscript } = useVoiceInput(setPrompt, selectedLanguage);
 
     const handleSend = useCallback(() => {
         if (!isLoading && prompt.trim() && !isListening) {
@@ -883,7 +798,6 @@ const MainInput = memo(({ prompt, setPrompt, isDark, isLoading, onSendMessage, s
                         volume={volume}
                         onToggleMic={toggleMic}
                         visualizerType={visualizerType}
-                        isMicAvailable={isMicAvailable}
                     />
                 </motion.div>
             </div>
@@ -916,7 +830,6 @@ export const ChatWindow = () => {
     const [selectedVisualizer, setSelectedVisualizer] = useState('bars');
     const [isListening, setIsListening] = useState(false);
 
-
     const chatEndRef = useRef(null);
 
     const greeting = useMemo(() => {
@@ -941,7 +854,7 @@ export const ChatWindow = () => {
     const sendMessage = useCallback(async (message) => {
         if (!message.trim()) return;
 
-        const wasNewChat = isNewChat; // ADD THIS LINE - Track if this was a new chat
+        const wasNewChat = isNewChat;
 
         setChats(prev => [...prev, { role: "user", content: message }]);
         setPrompt("");
@@ -954,7 +867,6 @@ export const ChatWindow = () => {
                 threadId: currentThreadId,
             }, { withCredentials: true });
 
-            // ADD THESE 3 LINES - Update URL after first message
             if (wasNewChat) {
                 navigate(`/samvadPlace/${currentThreadId}`, { replace: true });
             }
@@ -974,11 +886,10 @@ export const ChatWindow = () => {
                 }
             }, 40);
         } catch (error) {
-
             showCustomToast('Failed to send message. Please try again.', 'error');
             setIsLoading(false);
         }
-    }, [currentThreadId, setChats, setPrompt, setIsNewChat, isNewChat, navigate]); // ADD isNewChat and navigate
+    }, [currentThreadId, setChats, setPrompt, setIsNewChat, isNewChat, navigate]);
 
     return (
         <div className={`flex flex-col h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
