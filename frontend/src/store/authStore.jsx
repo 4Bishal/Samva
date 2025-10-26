@@ -128,7 +128,7 @@ export const useAuthStore = create((set) => ({
     checkAuth: async () => {
         set({ isCheckingAuth: true });
         try {
-            const res = await axios.post(`${baseUrl}/check-auth`);
+            const res = await axios.post(`${baseUrl}/check-auth`, {}, { withCredentials: true });
             if (res.data.success) {
                 set({
                     user: {
