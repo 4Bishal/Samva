@@ -1,4 +1,4 @@
-import { useEffect, useContext } from 'react';
+import { useEffect, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { ThemeContext } from '../utils/ThemeProvider';
@@ -39,7 +39,7 @@ const GoogleSignIn = () => {
             window.google.accounts.id.initialize({
                 client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 callback: handleCredentialResponse,
-                locale: 'en', // Force English language
+                locale: 'en',
             });
 
             const buttonContainer = document.getElementById('googleSignInButton');
@@ -47,20 +47,17 @@ const GoogleSignIn = () => {
                 // Clear previous button
                 buttonContainer.innerHTML = '';
 
-                // Detect screen size
-                const isMobile = window.innerWidth < 640;
-
-                // Render with theme-appropriate styling
+                // Render custom styled button
                 window.google.accounts.id.renderButton(
                     buttonContainer,
                     {
-                        theme: theme === 'dark' ? 'filled_black' : 'outline',
+                        theme: 'outline',
                         size: 'large',
                         text: 'signin_with',
-                        shape: 'pill',
-                        width: isMobile ? window.innerWidth - 80 : 360, // Responsive width
+                        shape: 'rectangular',
+                        width: 400,
                         logo_alignment: 'left',
-                        locale: 'en', // Force English language
+                        locale: 'en',
                     }
                 );
             }
@@ -77,9 +74,9 @@ const GoogleSignIn = () => {
     };
 
     return (
-        <div className="mt-6">
+        <div>
             {/* Divider */}
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-4 mb-6">
                 <div className={`flex-1 h-px transition-colors duration-500 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'
                     }`}></div>
                 <span className={`text-sm font-medium transition-colors duration-500 ${colors.subText}`}>
@@ -89,7 +86,7 @@ const GoogleSignIn = () => {
                     }`}></div>
             </div>
 
-            {/* Google Button Container */}
+            {/* Google Button Container with custom styling */}
             <div className="relative w-full flex justify-center items-center">
                 {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-xl z-10 backdrop-blur-sm">
@@ -107,18 +104,62 @@ const GoogleSignIn = () => {
                 ></div>
             </div>
 
-            {/* Styling adjustments for Google button */}
+            {/* Custom styling to make Google button look like login button */}
             <style>{`
+                /* Container styling */
                 #googleSignInButton > div {
                     margin: 0 auto !important;
                     width: 100% !important;
-                    max-width: min(360px, 100%) !important;
+                    max-width: 100% !important;
                 }
                 
                 #googleSignInButton iframe {
                     margin: 0 auto !important;
                     width: 100% !important;
                     max-width: 100% !important;
+                }
+
+                /* Custom button styling to match login button */
+                #googleSignInButton > div > div {
+                    border-radius: 0.75rem !important; /* rounded-xl */
+                    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important; /* shadow-lg */
+                    transition: all 0.3s ease !important;
+                    border: 2px solid ${theme === 'dark' ? '#374151' : '#d1d5db'} !important; /* border-2 */
+                    background-color: ${theme === 'dark' ? '#1f2937' : '#ffffff'} !important;
+                    overflow: hidden !important;
+                }
+
+                /* Hover effect - scale up */
+                #googleSignInButton > div > div:hover {
+                    transform: scale(1.02) !important;
+                    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important; /* shadow-xl */
+                    border-color: ${theme === 'dark' ? '#4b5563' : '#9ca3af'} !important;
+                    background-color: ${theme === 'dark' ? '#374151' : '#f9fafb'} !important;
+                }
+
+                /* Active effect - scale down */
+                #googleSignInButton > div > div:active {
+                    transform: scale(0.98) !important;
+                }
+
+                /* Make iframe fill container properly */
+                #googleSignInButton iframe {
+                    border-radius: 0.75rem !important;
+                }
+
+                /* Dark theme adjustments */
+                ${theme === 'dark' ? `
+                    #googleSignInButton > div > div {
+                        filter: brightness(0.95);
+                    }
+                    #googleSignInButton > div > div:hover {
+                        filter: brightness(1.05);
+                    }
+                ` : ''}
+
+                /* Smooth transitions */
+                #googleSignInButton * {
+                    transition: all 0.3s ease !important;
                 }
 
                 /* Mobile responsive */
@@ -128,16 +169,6 @@ const GoogleSignIn = () => {
                         max-width: 100% !important;
                     }
                 }
-
-                /* Dark theme adjustments */
-                ${theme === 'dark' ? `
-                    #googleSignInButton {
-                        filter: brightness(0.95);
-                    }
-                    #googleSignInButton:hover {
-                        filter: brightness(1.05);
-                    }
-                ` : ''}
             `}</style>
         </div>
     );

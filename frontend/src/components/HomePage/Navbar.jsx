@@ -103,7 +103,19 @@ export const NavBar = () => {
                 <button
                     onClick={toggleTheme}
                     title="Toggle Theme"
-                    className="p-2 rounded-full transition-all duration-300 hover:bg-gray-700/20"
+                    className="
+    p-2 
+    rounded-full 
+    transition-all 
+    duration-300 
+    cursor-pointer 
+    border 
+    border-gray-500/30 
+    shadow-sm 
+    hover:bg-gray-700/20 
+    hover:scale-105 
+    active:scale-95
+  "
                 >
                     {isDark ? (
                         <Sun size={18} className="text-yellow-400" />
@@ -111,6 +123,7 @@ export const NavBar = () => {
                         <Moon size={18} className="text-blue-500" />
                     )}
                 </button>
+
 
                 {/* Auth buttons */}
                 {!isAuthenticated ? (

@@ -1,4 +1,4 @@
-// NavBar.jsx
+// NavBar.jsx - Mobile Visibility Fix
 import { ChevronDown, Home, LogOut, Languages, Radio, User } from "lucide-react";
 import { ThemeToggle } from "../../utils/ThemeToggle.jsx";
 import { ThemeContext } from "../../utils/ThemeProvider";
@@ -26,7 +26,6 @@ export const SUPPORTED_LANGUAGES = [
     { code: 'zh-CN', name: 'Chinese', flag: '🇨🇳' },
     { code: 'ar-SA', name: 'Arabic', flag: '🇸🇦' },
     { code: 'ru-RU', name: 'Russian', flag: '🇷🇺' },
-
 ];
 
 // Professional visualizer icons using SVG paths
@@ -133,10 +132,7 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
         setReply
     } = useContext(ChatContext);
 
-
-
     const navigate = useNavigate();
-
 
     // Click outside handlers
     useEffect(() => {
@@ -194,14 +190,14 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
             </div>
 
             {/* Right - Language + Visualizer + Theme + User */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
 
-                {/* Language Selector - Speech Recognition Language */}
-                <div className="relative" ref={langDropdownRef}>
+                {/* Language Selector - Speech Recognition Language - Desktop Only */}
+                <div className="relative hidden md:block" ref={langDropdownRef}>
                     <motion.button
                         onClick={() => !isListening && setLangDropdownOpen(!langDropdownOpen)}
                         disabled={isListening}
-                        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${isListening
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${isListening
                             ? isDark
                                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -213,9 +209,8 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                         whileTap={!isListening ? { scale: 0.98 } : {}}
                         title={`Voice Language: ${selectedLang.name}`}
                     >
-                        <Languages size={16} className="sm:w-[18px] sm:h-[18px]" />
-                        <span className="hidden md:inline text-xs">{selectedLang.name.split(' ')[0]}</span>
-                        <span className="md:hidden text-base">{selectedLang.flag}</span>
+                        <Languages size={18} />
+                        <span className="text-xs whitespace-nowrap">{selectedLang.name.split(' ')[0]}</span>
                         <ChevronDown size={14} className={`transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
                     </motion.button>
 
@@ -288,7 +283,7 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                     <motion.button
                         onClick={() => !isListening && setVizDropdownOpen(!vizDropdownOpen)}
                         disabled={isListening}
-                        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${isListening
+                        className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${isListening
                             ? isDark
                                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -300,9 +295,9 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                         whileTap={!isListening ? { scale: 0.98 } : {}}
                         title={`Animation: ${selectedViz.name}`}
                     >
-                        <Radio size={16} className="sm:w-[18px] sm:h-[18px]" />
-                        <span className="hidden md:inline text-xs">Animation</span>
-                        <ChevronDown size={14} className={`transition-transform duration-200 ${vizDropdownOpen ? 'rotate-180' : ''}`} />
+                        <Radio size={16} className="sm:w-[18px] sm:h-[18px] flex-shrink-0" />
+                        <span className="hidden sm:inline text-xs whitespace-nowrap">Animation</span>
+                        <ChevronDown size={14} className={`transition-transform duration-200 flex-shrink-0 ${vizDropdownOpen ? 'rotate-180' : ''}`} />
                     </motion.button>
 
                     <AnimatePresence>
@@ -312,7 +307,7 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                 transition={{ duration: 0.15 }}
-                                className={`absolute top-full mt-2 right-0 w-56 rounded-xl shadow-2xl border ${isDark
+                                className={`absolute top-full mt-2 right-0 w-56 max-w-[calc(100vw-2rem)] rounded-xl shadow-2xl border ${isDark
                                     ? 'bg-gray-800 border-gray-700'
                                     : 'bg-white border-gray-200'
                                     } z-50`}
@@ -432,4 +427,3 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
         </div>
     );
 };
-
