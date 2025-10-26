@@ -7,6 +7,7 @@ import { NavBar } from "../components/HomePage/Navbar";
 import { Footer } from "../components/HomePage/Footer";
 import { ThemeContext } from "../utils/ThemeProvider";
 import { themeColors } from "../utils/themeColor";
+import GoogleSignIn from "../components/GoogleSignIn ";
 
 export const LoginPage = () => {
     const [email, setEmail] = useState("");
@@ -109,6 +110,9 @@ export const LoginPage = () => {
                             )}
                         </motion.button>
                     </form>
+
+                    {/* Google Sign-In */}
+                    <GoogleSignIn />
 
                     {/* Switch to Register */}
                     <p

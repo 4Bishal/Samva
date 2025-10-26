@@ -248,7 +248,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             if (isMobileDevice()) {
                 if (isMounted) {
                     setIsMicAvailable(false);
-                    console.warn('Voice input not available on mobile devices');
+
                 }
                 return;
             }
@@ -257,7 +257,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             if (!browserSupportsSpeechRecognition) {
                 if (isMounted) {
                     setIsMicAvailable(false);
-                    console.warn('Speech recognition not supported');
+
                 }
                 return;
             }
@@ -266,7 +266,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             if (!window.isSecureContext) {
                 if (isMounted) {
                     setIsMicAvailable(false);
-                    console.warn('Speech recognition requires HTTPS');
+
                 }
                 return;
             }
@@ -287,7 +287,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             } catch (error) {
                 if (isMounted) {
                     setIsMicAvailable(false);
-                    console.warn('Microphone not available:', error);
+
                 }
             }
         };
@@ -335,7 +335,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 };
             })
             .catch(error => {
-                console.error('Microphone access error:', error);
+
                 setIsListening(false);
                 setIsMicAvailable(false);
 
@@ -376,7 +376,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
         // Handle errors with throttling
         const handleError = (event) => {
-            console.error('Speech recognition error:', event.error);
+
 
             const now = Date.now();
             const timeSinceLastError = now - lastErrorTimeRef.current;
@@ -387,7 +387,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
                 // If too many errors in short time, stop listening
                 if (errorCountRef.current > 3) {
-                    console.warn('Too many errors, stopping speech recognition');
+
                     setIsListening(false);
                     setIsMicAvailable(false);
                     SpeechRecognition.stopListening();
@@ -411,7 +411,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
             // Handle specific errors
             if (event.error === 'no-speech') {
                 // Don't show error for no-speech, it's normal
-                console.log('No speech detected');
+
             } else if (event.error === 'audio-capture') {
                 showCustomToast('Microphone error. Please check your microphone.', 'error');
                 setIsMicAvailable(false);
@@ -435,11 +435,11 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                     );
                     hasShownChromeWarningRef.current = true;
                 } else {
-                    showCustomToast('Network error occurred. Please try again.', 'error');
+                    showCustomToast("For the best experience, please use Chrome on a desktop device — your current browser may not fully support this feature.", "warning");
                 }
             } else if (event.error === 'aborted') {
                 // Silently handle aborted errors
-                console.log('Speech recognition aborted');
+
                 setIsListening(false);
                 SpeechRecognition.stopListening();
             }
@@ -447,7 +447,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
         // Handle end event - FIXED: Don't auto-restart to prevent loops
         const handleEnd = () => {
-            console.log('Speech recognition ended');
+
 
             // Don't restart if we're intentionally stopping
             if (isStoppingRef.current) {
@@ -457,7 +457,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
             // Don't restart if there were recent errors
             if (errorCountRef.current > 2) {
-                console.warn('Not restarting due to previous errors');
+
                 setIsListening(false);
                 return;
             }
@@ -476,16 +476,16 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                             } catch (startError) {
                                 // Handle "already started" error silently
                                 if (startError.message && startError.message.includes('already started')) {
-                                    console.log('Recognition already running, skipping restart');
+
                                 } else {
-                                    console.error('Error starting recognition:', startError);
+
                                     setIsListening(false);
                                 }
                             }
                         }
                     }, 100);
                 } catch (error) {
-                    console.error('Error restarting recognition:', error);
+
                     setIsListening(false);
                 }
             }
@@ -493,7 +493,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
 
         // Handle start
         const handleStart = () => {
-            console.log('Speech recognition started');
+
             errorCountRef.current = 0; // Reset error count on successful start
         };
 
@@ -557,7 +557,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 accumulatedTranscriptRef.current = "";
                 errorCountRef.current = 0; // Reset error count
             } catch (error) {
-                console.error('Error stopping speech recognition:', error);
+
                 showCustomToast('Failed to stop voice input.', 'error');
             }
         } else {
@@ -580,7 +580,7 @@ const useVoiceInput = (setPrompt, selectedLanguage) => {
                 });
                 hasShownErrorRef.current = false;
             } catch (error) {
-                console.error('Speech recognition error:', error);
+
                 setIsListening(false);
                 setIsMicAvailable(false);
                 showCustomToast('Failed to start voice input. Please check microphone permissions.', 'error');
@@ -974,7 +974,7 @@ export const ChatWindow = () => {
                 }
             }, 40);
         } catch (error) {
-            console.error('Error sending message:', error);
+
             showCustomToast('Failed to send message. Please try again.', 'error');
             setIsLoading(false);
         }

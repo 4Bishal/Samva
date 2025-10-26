@@ -78,6 +78,40 @@ export const VISUALIZER_TYPES = [
     },
 ];
 
+export const UserAvatar = ({ size = 'medium' }) => {
+    const { user } = useAuthStore();
+    const { theme } = useContext(ThemeContext);
+
+    const sizeClasses = {
+        small: 'w-8 h-8 text-sm',
+        medium: 'w-12 h-12 text-lg',
+        large: 'w-20 h-20 text-2xl',
+        xlarge: 'w-32 h-32 text-4xl'
+    };
+
+    const getInitials = (name) => {
+        return name?.charAt(0).toUpperCase() || 'U';
+    };
+
+    return (
+        <div className={`${sizeClasses[size]} rounded-full overflow-hidden flex items-center justify-center font-bold transition-all duration-500 ${theme === 'dark'
+            ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+            : 'bg-gradient-to-br from-blue-400 to-purple-500 text-white'
+            }`}>
+            {user?.profilePicture ? (
+                <img
+                    src={user.profilePicture}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                />
+            ) : (
+                <span>{getInitials(user?.name)}</span>
+            )}
+        </div>
+    );
+};
+
 export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer, onVisualizerChange, isListening }) => {
     const { theme } = useContext(ThemeContext);
     const { user, logout } = useAuthStore();
@@ -99,7 +133,10 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
         setReply
     } = useContext(ChatContext);
 
+
+
     const navigate = useNavigate();
+
 
     // Click outside handlers
     useEffect(() => {
@@ -346,17 +383,10 @@ export const NavBar = ({ selectedLanguage, onLanguageChange, selectedVisualizer,
                 <div className="relative" ref={userDropdownRef}>
                     <button
                         onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                        className={`relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-semibold uppercase transition-all duration-300 text-sm border-2 ${isDark
-                            ? "bg-gray-800 border-gray-700 text-gray-200 hover:border-purple-500"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-purple-400 shadow-sm"
-                            }`}
+                        className="relative rounded-full transition-all duration-300 hover:ring-2 hover:ring-offset-2 hover:ring-purple-500"
                         title={user?.name || "User menu"}
                     >
-                        {user?.name ? (
-                            user.name.charAt(0)
-                        ) : (
-                            <User size={18} />
-                        )}
+                        <UserAvatar size="small" />
                     </button>
 
                     {/* User Dropdown Menu */}

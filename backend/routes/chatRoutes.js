@@ -1,10 +1,10 @@
 import express from "express";
 import { Thread } from "../models/Thread.model.js";
-import { User } from "../models/User.model.js";
 import { getApiResponseFromGemini } from "../utils/geminiApi.js";
 import { generateChatTitle } from "../utils/titleGenerator.js";
 import { verifyToken } from "../middleware/verifyToken.js";
-import { checkAuth, handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
+import { checkAuth, handleGoogleAuth, handleLogin, handleLogout, handleRegister } from "../controllers/auth.controller.js";
+import { User } from "../models/User.model.js";
 
 const router = express.Router();
 
@@ -98,5 +98,7 @@ router.post("/register", handleRegister);
 router.post("/login", handleLogin);
 
 router.post("/logout", handleLogout);
+
+router.post("/google", handleGoogleAuth);
 
 export { router };
