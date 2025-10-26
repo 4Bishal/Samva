@@ -40,6 +40,8 @@ const GoogleSignIn = () => {
                 client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 callback: handleCredentialResponse,
                 locale: 'en',
+                auto_select: false, // Disable auto-select
+                cancel_on_tap_outside: true,
             });
 
             const buttonContainer = document.getElementById('googleSignInButton');
@@ -53,11 +55,12 @@ const GoogleSignIn = () => {
                     {
                         theme: 'outline',
                         size: 'large',
-                        text: 'signin_with',
+                        text: 'signin_with', // Generic text
                         shape: 'rectangular',
                         width: 400,
                         logo_alignment: 'left',
                         locale: 'en',
+                        type: 'standard', // Standard type (not personalized)
                     }
                 );
             }
