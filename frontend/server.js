@@ -7,20 +7,29 @@ const port = process.env.PORT || 5000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-console.log(__dirname);
-// Path to Vite build output
-const buildPath = path.join(__dirname, "dist"); // <- matches your structure
 
-console.log(buildPath);
+const buildPath = path.resolve(__dirname, "./dist");
+console.log("Serving from:", buildPath);
 
-// Serve static files
-app.use(express.static(buildPath));
+// ✅ Serve correct MIME for static files
+app.use(
+    express.static(buildPath, {
+        setHeaders: (res, path) => {
+            if (path.endsWith(".css")) {
+                res.setHeader("Content-Type", "text/css");
+            }
+            if (path.endsWith(".js")) {
+                res.setHeader("Content-Type", "application/javascript");
+            }
+        },
+    })
+);
 
-// Catch-all route for React Router
-app.get("/*", (req, res) => {
+// ✅ Catch-all for React Router
+app.get("*", (req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
 });
 
 app.listen(port, () => {
-    console.log(`🚀 Local preview running at http://localhost:${port}`);
+    console.log(`🚀 Running on port ${port}`);
 });
